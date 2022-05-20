@@ -48,10 +48,26 @@ describe('World Name Service Contract', () => {
 
       await mintWRLDToAddressAndAllow(registerer, 500000);
 
-      await wnsContract.connect(registerer).register(
-        [ 'arktech', 'ark', 'wrld', 'dev', 'yolo' ],
-        [ 10, 10, 10, 15, 10 ],
-      );
+      const names = [ 'arktech', 'ark', 'wrld', 'dev', 'yolo' ];
+      const years = [ 10, 10, 10, 15, 10 ];
+
+      await wnsContract.connect(registerer).register(names, years);
+
+      for (let i = 0; i < names.length; i++) {
+        const wrldName = await wnsContract.getName(names[i]);
+        expect(wrldName.name).to.equal(names[i]);
+      }
+    });
+
+    it('Fails to regiter an existing, unexpired name', async () => {
+      const registererOne = otherAddresses[0];
+      const registererTwo = otherAddresses[1];
+
+      await mintWRLDToAddressAndAllow(registererOne, 50000);
+      await mintWRLDToAddressAndAllow(registererTwo, 50000);
+
+      await wnsContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
+      await wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ]);
     });
   });
 

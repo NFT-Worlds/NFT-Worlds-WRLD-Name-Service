@@ -62,8 +62,6 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
     uint256 sumYears = 0;
     uint256 tokenStartId = _currentIndex;
 
-    _safeMint(msg.sender, _names.length);
-
     for (uint256 i = 0; i < _names.length; i++) {
       require(getNameExpiration(_names[i]) < block.timestamp, "Unavailable name");
       require(_registrationYears[i] > 0, "Years must be greater than 0");
@@ -79,6 +77,8 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
 
       sumYears += _registrationYears[i];
     }
+
+    _safeMint(msg.sender, _names.length);
 
     wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
   }
@@ -132,49 +132,49 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
     return wrldNames[nameTokenId[_name]].expiresAt;
   }
 
-  function getNameAddressRecord(string calldata _name, string calldata _record) external view virtual override returns (AddressRecord memory) {
+  function getNameAddressRecord(string calldata _name, string calldata _record) external view override returns (AddressRecord memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecord(_name, _record)
       : wrldNameAddressRecords[nameTokenId[_name]][_record];
   }
 
-  function getNameAddressRecordsList(string calldata _name) external view virtual override returns (string[] memory) {
+  function getNameAddressRecordsList(string calldata _name) external view override returns (string[] memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecordsList(_name)
       : wrldNameAddressRecordsList[nameTokenId[_name]];
   }
 
-  function getNameStringRecord(string calldata _name, string calldata _record) external view virtual override returns (StringRecord memory) {
+  function getNameStringRecord(string calldata _name, string calldata _record) external view override returns (StringRecord memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameStringRecord(_name, _record)
       : wrldNameStringRecords[nameTokenId[_name]][_record];
   }
 
-  function getNameStringRecordsList(string calldata _name) external view virtual override returns (string[] memory) {
+  function getNameStringRecordsList(string calldata _name) external view override returns (string[] memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameStringRecordsList(_name)
       : wrldNameStringRecordsList[nameTokenId[_name]];
   }
 
-  function getNameUintRecord(string calldata _name, string calldata _record) external view virtual override returns (UintRecord memory) {
+  function getNameUintRecord(string calldata _name, string calldata _record) external view override returns (UintRecord memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameUintRecord(_name, _record)
       : wrldNameUintRecords[nameTokenId[_name]][_record];
   }
 
-  function getNameUintRecordsList(string calldata _name) external view virtual override returns (string[] memory) {
+  function getNameUintRecordsList(string calldata _name) external view override returns (string[] memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameUintRecordsList(_name)
       : wrldNameUintRecordsList[nameTokenId[_name]];
   }
 
-  function getNameIntRecord(string calldata _name, string calldata _record) external view virtual override returns (IntRecord memory) {
+  function getNameIntRecord(string calldata _name, string calldata _record) external view override returns (IntRecord memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameIntRecord(_name, _record)
       : wrldNameIntRecords[nameTokenId[_name]][_record];
   }
 
-  function getNameIntRecordsList(string calldata _name) external view virtual override returns (string[] memory) {
+  function getNameIntRecordsList(string calldata _name) external view override returns (string[] memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameIntRecordsList(_name)
       : wrldNameIntRecordsList[nameTokenId[_name]];
@@ -262,7 +262,7 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
    * Overrides *
    *************/
 
-  function _startTokenId() internal view virtual override returns (uint256) {
+  function _startTokenId() internal pure override returns (uint256) {
     return 1;
   }
 
@@ -272,8 +272,8 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
 
       wrldName.controller = to;
 
-      //setAddressRecord(wrldName.name, "ethereum", to, 3600);
-      //setAddressRecord(wrldName.name, "polygon", to, 3600);
+//      setAddressRecord(wrldName.name, "ethereum", to, 3600);
+//      setAddressRecord(wrldName.name, "polygon", to, 3600);
 
       super._afterTokenTransfers(from, to, startTokenId, quantity);
     }
