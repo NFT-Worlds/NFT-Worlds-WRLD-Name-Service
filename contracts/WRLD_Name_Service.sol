@@ -21,10 +21,18 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
   uint256 public annualWrldPrice = 500 ether; // $WRLD
   mapping(uint256 => WRLDName) public wrldNames;
   mapping(bytes32 => uint256) public nameTokenId;
-  mapping(uint256 => mapping(bytes32 => StringRecord)) private wrldNameStringRecords;
+
   mapping(uint256 => mapping(bytes32 => AddressRecord)) private wrldNameAddressRecords;
+  mapping(uint256 => bytes32[]) private wrldNameAddressRecordsList;
+
+  mapping(uint256 => mapping(bytes32 => StringRecord)) private wrldNameStringRecords;
+  mapping(uint256 => bytes32[]) private wrldNameStringRecordsList;
+
   mapping(uint256 => mapping(bytes32 => UintRecord)) private wrldNameUintRecords;
+  mapping(uint256 => bytes32[]) private wrldNameUintRecordsList;
+
   mapping(uint256 => mapping(bytes32 => IntRecord)) private wrldNameIntRecords;
+  mapping(uint256 => bytes32[]) private wrldNameIntRecordsList;
 
   Counters.Counter public tokenSupply;
 
@@ -104,6 +112,10 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
     return nameTokenId[_name] != 0;
   }
 
+  function nameAlternateResolverExists(bytes32 _name) public view returns (bool) {
+    return address(wrldNames[nameTokenId[_name]].alternateResolver) != address(0);
+  }
+
   function getTokenName(uint256 _tokenId) external view returns (bytes32) {
     return wrldNames[_tokenId].name;
   }
@@ -124,44 +136,52 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
     return wrldNames[nameTokenId[_name]].expiresAt;
   }
 
-  function getNameStringRecord(bytes32 _name, bytes32 _record) external view virtual override returns (StringRecord memory) {
-    WRLDName storage wrldName = wrldNames[nameTokenId[_name]];
-
-    if (address(wrldName.alternateResolver) != address(0)) {
-      return wrldName.alternateResolver.getNameStringRecord(_name, _record);
-    } else {
-      return wrldNameStringRecords[nameTokenId[_name]][_record];
-    }
+  function getNameAddressRecord(bytes32 _name, bytes32 _record) external view virtual override returns (AddressRecord memory) {
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecord(_name, _record)
+      : wrldNameAddressRecords[nameTokenId[_name]][_record];
   }
 
-  function getNameAddressRecord(bytes32 _name, bytes32 _record) external view virtual override returns (AddressRecord memory) {
-    WRLDName storage wrldName = wrldNames[nameTokenId[_name]];
+  function getNameAddressRecordsList(bytes32 _name) external view virtual override returns (bytes32[] memory) {
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecordsList(_name)
+      : wrldNameAddressRecordsList[nameTokenId[_name]];
+  }
 
-    if (address(wrldName.alternateResolver) != address(0)) {
-      return wrldName.alternateResolver.getNameAddressRecord(_name, _record);
-    } else {
-      return wrldNameAddressRecords[nameTokenId[_name]][_record];
-    }
+  function getNameStringRecord(bytes32 _name, bytes32 _record) external view virtual override returns (StringRecord memory) {
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameStringRecord(_name, _record)
+      : wrldNameStringRecords[nameTokenId[_name]][_record];
+  }
+
+  function getNameStringRecordsList(bytes32 _name) external view virtual override returns (bytes32[] memory) {
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameStringRecordsList(_name)
+      : wrldNameStringRecordsList[nameTokenId[_name]];
   }
 
   function getNameUintRecord(bytes32 _name, bytes32 _record) external view virtual override returns (UintRecord memory) {
-    WRLDName storage wrldName = wrldNames[nameTokenId[_name]];
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameUintRecord(_name, _record)
+      : wrldNameUintRecords[nameTokenId[_name]][_record];
+  }
 
-    if (address(wrldName.alternateResolver) != address(0)) {
-      return wrldName.alternateResolver.getNameUintRecord(_name, _record);
-    } else {
-      return wrldNameUintRecords[nameTokenId[_name]][_record];
-    }
+  function getNameUintRecordsList(bytes32 _name) external view virtual override returns (bytes32[] memory) {
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameUintRecordsList(_name)
+      : wrldNameUintRecordsList[nameTokenId[_name]];
   }
 
   function getNameIntRecord(bytes32 _name, bytes32 _record) external view virtual override returns (IntRecord memory) {
-    WRLDName storage wrldName = wrldNames[nameTokenId[_name]];
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameIntRecord(_name, _record)
+      : wrldNameIntRecords[nameTokenId[_name]][_record];
+  }
 
-    if (address(wrldName.alternateResolver) != address(0)) {
-      return wrldName.alternateResolver.getNameIntRecord(_name, _record);
-    } else {
-      return wrldNameIntRecords[nameTokenId[_name]][_record];
-    }
+  function getNameIntRecordsList(bytes32 _name) external view virtual override returns (bytes32[] memory) {
+    return (nameAlternateResolverExists(_name))
+      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameIntRecordsList(_name)
+      : wrldNameIntRecordsList[nameTokenId[_name]];
   }
 
   /***********
@@ -182,6 +202,17 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
     wrldNames[nameTokenId[_name]].alternateResolver = resolver;
   }
 
+  function setAddressRecord(bytes32 _name, bytes32 _record, address _value, uint256 _ttl) public {
+    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
+
+    wrldNameAddressRecords[nameTokenId[_name]][_record] = AddressRecord({
+      value: _value,
+      ttl: _ttl
+    });
+
+    wrldNameAddressRecordsList[nameTokenId[_name]].push(_record);
+  }
+
   function setStringRecord(bytes32 _name, bytes32 _record, string calldata _value, uint256 _ttl) external {
     require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
 
@@ -189,15 +220,8 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
       value: _value,
       ttl: _ttl
     });
-  }
 
-  function setAddressRecord(bytes32 _name, bytes32 _record, address _value, uint256 _ttl) external {
-    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
-    wrldNameAddressRecords[nameTokenId[_name]][_record] = AddressRecord({
-      value: _value,
-      ttl: _ttl
-    });
+    wrldNameStringRecordsList[nameTokenId[_name]].push(_record);
   }
 
   function setUintRecord(bytes32 _name, bytes32 _record, uint256 _value, uint256 _ttl) external {
@@ -207,6 +231,8 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
       value: _value,
       ttl: _ttl
     });
+
+    wrldNameUintRecordsList[nameTokenId[_name]].push(_record);
   }
 
   function setIntRecord(bytes32 _name, bytes32 _record, int256 _value, uint256 _ttl) external {
@@ -216,6 +242,8 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
       value: _value,
       ttl: _ttl
     });
+
+    wrldNameIntRecordsList[nameTokenId[_name]].push(_record);
   }
 
   /*********
@@ -231,7 +259,7 @@ contract WRLD_Name_Service is IWRLD_Name_Service_Resolver, ERC721, Ownable, Reen
    **************/
 
   function withdrawWrld(address toAddress) external onlyOwner {
-    payable(toAddress).transfer(address(this).balance);
+    wrld.transferFrom(address(this), toAddress, wrld.balanceOf(address(this)));
   }
 
   /*************

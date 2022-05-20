@@ -25,7 +25,14 @@ interface IWRLD_Name_Service_Resolver is IERC165 {
   }
 
   function getNameStringRecord(bytes32 _name, bytes32 _record) external view returns (StringRecord memory);
+  function getNameStringRecordsList(bytes32 _name) external view returns (bytes32[] memory);
+
   function getNameAddressRecord(bytes32 _name, bytes32 _record) external view returns (AddressRecord memory);
+  function getNameAddressRecordsList(bytes32 _name) external view returns (bytes32[] memory);
+
   function getNameUintRecord(bytes32 _name, bytes32 _record) external view returns (UintRecord memory);
+  function getNameUintRecordsList(bytes32 _name) external view returns (bytes32[] memory);
+
   function getNameIntRecord(bytes32 _name, bytes32 _record) external view returns (IntRecord memory);
+  function getNameIntRecordsList(bytes32 _name) external view returns (bytes32[] memory);
 }
