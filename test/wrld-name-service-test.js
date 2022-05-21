@@ -74,6 +74,26 @@ describe('World Name Service Contract', () => {
       expect((await wnsContract.getNameExpiration('arkdev') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
     });
 
+    it('Registers WRLD name and allows a new registrant if expiration time has passed', async () => {
+      const registererOne = otherAddresses[0];
+      const registererTwo = otherAddresses[1];
+
+      await mintWRLDToAddressAndAllow(registererOne, 50000);
+      await mintWRLDToAddressAndAllow(registererTwo, 50000);
+
+      await wnsContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
+      await expect(wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
+
+      const tokenId = await wnsContract.nameTokenId('arkdev') * 1;
+
+      await ethers.provider.send('evm_mine', [ Date.now() / 1000 + (YEAR_SECONDS * 2) + 600 ]);
+
+      await wnsContract.connect(registererTwo).register([ 'arkdev', 'newark' ], [ 3, 1 ]);
+      await expect(wnsContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
+
+      expect(await wnsContract.nameTokenId('arkdev') * 1).to.equal(tokenId);
+    });
+
     it('Fails to register an existing, unexpired name', async () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];

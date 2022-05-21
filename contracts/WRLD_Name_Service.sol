@@ -13,6 +13,10 @@ import "./IWRLD_Name_Service_Resolver.sol";
 contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, ReentrancyGuard {
   using Strings for uint256;
 
+  /**
+   * @dev @iamarkdev was here
+   * */
+
   IERC20 immutable wrld;
 
   uint256 private constant YEAR_SECONDS = 31536000;
@@ -59,26 +63,45 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
   function register(string[] calldata _names, uint8[] calldata _registrationYears) external nonReentrant {
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
+    uint256 mintCount = 0;
     uint256 sumYears = 0;
     uint256 tokenStartId = _currentIndex;
 
     for (uint256 i = 0; i < _names.length; i++) {
-      require(getNameExpiration(_names[i]) < block.timestamp, "Unavailable name");
       require(_registrationYears[i] > 0, "Years must be greater than 0");
 
-      wrldNames[tokenStartId + i] = WRLDName({
-        name: _names[i],
-        controller: msg.sender,
-        alternateResolver: IWRLD_Name_Service_Resolver(address(0)),
-        expiresAt: block.timestamp + YEAR_SECONDS * _registrationYears[i]
-      });
+      string calldata name = _names[i];
+      uint256 expiresAt = block.timestamp + YEAR_SECONDS * _registrationYears[i];
 
-      nameTokenId[_names[i]] = tokenStartId + i;
+      if (nameExists(name)) {
+        require(getNameExpiration(name) < block.timestamp, "Unavailable name");
+
+        uint256 existingTokenId = nameTokenId[name];
+
+        wrldNames[existingTokenId].expiresAt = expiresAt;
+
+        safeTransferFromForced(getNameOwner(name), msg.sender, existingTokenId, "");
+      } else {
+        uint256 newTokenId = tokenStartId + mintCount;
+
+        wrldNames[newTokenId] = WRLDName({
+          name: name,
+          controller: msg.sender,
+          alternateResolver: IWRLD_Name_Service_Resolver(address(0)),
+          expiresAt: expiresAt
+        });
+
+        nameTokenId[name] = newTokenId;
+
+        mintCount++;
+      }
 
       sumYears += _registrationYears[i];
     }
 
-    _safeMint(msg.sender, _names.length);
+    if (mintCount > 0) {
+      _safeMint(msg.sender, mintCount);
+    }
 
     wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
   }
@@ -104,7 +127,7 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
    * Resolve *
    ***********/
 
-  function nameExists(string calldata _name) external view returns (bool) {
+  function nameExists(string calldata _name) public view returns (bool) {
     return nameTokenId[_name] != 0;
   }
 
