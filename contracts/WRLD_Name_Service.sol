@@ -157,8 +157,6 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     return wrldNames[nameTokenId[_name]].expiresAt;
   }
 
-
-
   function getNameAddressRecord(string calldata _name, string calldata _record) external view override returns (AddressRecord memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecord(_name, _record)
@@ -212,14 +210,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    ***********/
 
   function setController(string calldata _name, address _controller) external {
-    require(getNameOwner(_name) == msg.sender, "Sender is not controller or owner");
+    require(getNameOwner(_name) == msg.sender, "Sender is not owner");
 
     wrldNames[nameTokenId[_name]].controller = _controller;
   }
 
-  function setAlternateResolver(string calldata _name, address _alternateResolver) external {
-    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
+  function setAlternateResolver(string calldata _name, address _alternateResolver) external isOwnerOrController(_name) {
     IWRLD_Name_Service_Resolver resolver = IWRLD_Name_Service_Resolver(_alternateResolver);
 
     require(resolver.supportsInterface(type(IWRLD_Name_Service_Resolver).interfaceId), "Invalid resolver");
@@ -227,9 +223,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     wrldNames[nameTokenId[_name]].alternateResolver = resolver;
   }
 
-  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) public {
-    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
+  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) public isOwnerOrController(_name) {
     wrldNameAddressRecords[nameTokenId[_name]][_record] = AddressRecord({
       value: _value,
       ttl: _ttl
@@ -238,9 +232,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     wrldNameAddressRecordsList[nameTokenId[_name]].push(_record);
   }
 
-  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external {
-    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
+  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external isOwnerOrController(_name) {
     wrldNameStringRecords[nameTokenId[_name]][_record] = StringRecord({
       value: _value,
       typeOf: _typeOf,
@@ -250,9 +242,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     wrldNameStringRecordsList[nameTokenId[_name]].push(_record);
   }
 
-  function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external {
-    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
+  function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external isOwnerOrController(_name) {
     wrldNameUintRecords[nameTokenId[_name]][_record] = UintRecord({
       value: _value,
       ttl: _ttl
@@ -261,9 +251,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     wrldNameUintRecordsList[nameTokenId[_name]].push(_record);
   }
 
-  function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external {
-    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
+  function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external isOwnerOrController(_name) {
     wrldNameIntRecords[nameTokenId[_name]][_record] = IntRecord({
       value: _value,
       ttl: _ttl
@@ -306,5 +294,15 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
       super._afterTokenTransfers(from, to, startTokenId, quantity);
     }
+  }
+
+  /*************
+   * Modifiers *
+   *************/
+
+  modifier isOwnerOrController(string memory _name) {
+    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
+
+    _;
   }
 }
