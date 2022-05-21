@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const { ethers, waffle } = require('hardhat');
 
 const ANNUAL_WRLD_PRICE = 500;
+const YEAR_SECONDS = 31536000;
 
 describe('World Name Service Contract', () => {
   let owner;
@@ -56,10 +57,24 @@ describe('World Name Service Contract', () => {
       for (let i = 0; i < names.length; i++) {
         const wrldName = await wnsContract.getName(names[i]);
         expect(wrldName.name).to.equal(names[i]);
+        expect(await wnsContract.getNameExpiration(wrldName.name)).to.equal(wrldName.expiresAt);
+        expect(await wnsContract.getTokenName(i + 1)).to.equal(wrldName.name);
+        expect(await wnsContract.nameTokenId(wrldName.name)).to.equal(i + 1);
       }
     });
 
-    it('Fails to regiter an existing, unexpired name', async () => {
+    it('Registers WRLD name and extends registration', async () => {
+      const registerer = otherAddresses[0];
+
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+
+      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
+      const initialExpiration = await wnsContract.getNameExpiration('arkdev');
+      await wnsContract.connect(registerer).extendRegistration([ 'arkdev' ], [ 5 ]);
+      expect((await wnsContract.getNameExpiration('arkdev') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
+    });
+
+    it('Fails to register an existing, unexpired name', async () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];
 
@@ -67,7 +82,7 @@ describe('World Name Service Contract', () => {
       await mintWRLDToAddressAndAllow(registererTwo, 50000);
 
       await wnsContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
-      await wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ]);
+      await expect(wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
     });
   });
 

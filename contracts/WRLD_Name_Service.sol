@@ -272,8 +272,7 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
 
       wrldName.controller = to;
 
-//      setAddressRecord(wrldName.name, "ethereum", to, 3600);
-//      setAddressRecord(wrldName.name, "polygon", to, 3600);
+      setAddressRecord(wrldName.name, "evm_default", to, 3600);
 
       super._afterTokenTransfers(from, to, startTokenId, quantity);
     }
