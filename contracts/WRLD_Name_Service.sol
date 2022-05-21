@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "erc721a/contracts/ERC721A.sol";
+import "./ERC721AF/ERC721AF.sol";
 
 import "./IWRLD_Name_Service_Resolver.sol";
 
-contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, ReentrancyGuard {
+contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, ReentrancyGuard {
   using Strings for uint256;
 
   /**
@@ -44,7 +44,7 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
     uint256 expiresAt;
   }
 
-  constructor(address _wrld) ERC721A("WRLD Name Service", "WNS") {
+  constructor(address _wrld) ERC721AF("WRLD Name Service", "WNS") {
     wrld = IERC20(_wrld);
   }
 
@@ -53,7 +53,9 @@ contract WRLD_Name_Service is ERC721A, IWRLD_Name_Service_Resolver, Ownable, Ree
    ************/
 
   function tokenURI(uint256 _tokenId) override public view returns (string memory) {
+    require(_exists(_tokenId), "ERC721Metadata: URI query for nonexistent token");
 
+    return "";
   }
 
   /****************
