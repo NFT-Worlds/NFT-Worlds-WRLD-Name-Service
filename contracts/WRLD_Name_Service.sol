@@ -157,6 +157,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     return wrldNames[nameTokenId[_name]].expiresAt;
   }
 
+
+
   function getNameAddressRecord(string calldata _name, string calldata _record) external view override returns (AddressRecord memory) {
     return (nameAlternateResolverExists(_name))
       ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecord(_name, _record)
@@ -216,6 +218,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
   }
 
   function setAlternateResolver(string calldata _name, address _alternateResolver) external {
+    require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
+
     IWRLD_Name_Service_Resolver resolver = IWRLD_Name_Service_Resolver(_alternateResolver);
 
     require(resolver.supportsInterface(type(IWRLD_Name_Service_Resolver).interfaceId), "Invalid resolver");
@@ -234,11 +238,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     wrldNameAddressRecordsList[nameTokenId[_name]].push(_record);
   }
 
-  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, uint256 _ttl) external {
+  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external {
     require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
 
     wrldNameStringRecords[nameTokenId[_name]][_record] = StringRecord({
       value: _value,
+      typeOf: _typeOf,
       ttl: _ttl
     });
 

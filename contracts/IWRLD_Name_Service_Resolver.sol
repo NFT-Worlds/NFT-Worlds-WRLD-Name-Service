@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 interface IWRLD_Name_Service_Resolver is IERC165 {
   struct StringRecord {
     string value;
+    string typeOf;
     uint256 ttl;
   }
 
