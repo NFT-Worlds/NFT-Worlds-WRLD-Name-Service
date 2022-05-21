@@ -94,6 +94,19 @@ describe('World Name Service Contract', () => {
       expect(await wnsContract.nameTokenId('arkdev') * 1).to.equal(tokenId);
     });
 
+    it('Registers WRLD name using emojis', async () => {
+      const registerer = otherAddresses[0];
+
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+
+      await wnsContract.connect(registerer).register([ '🔥🚀🌕' ], [ 1 ]);
+
+      const name = await wnsContract.getName('🔥🚀🌕');
+
+      expect(name.name).to.equal('🔥🚀🌕');
+      expect(name.controller).to.equal(registerer.address);
+    });
+
     it('Fails to register an existing, unexpired name', async () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];

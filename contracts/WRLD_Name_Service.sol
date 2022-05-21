@@ -55,7 +55,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
   function tokenURI(uint256 _tokenId) override public view returns (string memory) {
     require(_exists(_tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-    return "";
+    return ""; // todo
   }
 
   /****************
@@ -288,7 +288,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    *************/
 
   function _startTokenId() internal pure override returns (uint256) {
-    return 1;
+    return 1; // must start at 1, id 0 is used as non-existant check.
   }
 
   function _afterTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity) internal override {
