@@ -120,7 +120,56 @@ describe('World Name Service Contract', () => {
   });
 
   describe('Name Management', () => {
+    it('Creates wrld name, sets and retrieves record types', async () => {
+      const registerer = otherAddresses[0];
+      const controller = otherAddresses[1];
+      const otherAddress = otherAddresses[2];
 
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
+
+      expect(await wnsContract.getNameOwner('arkdev')).to.equal(registerer.address);
+
+      await wnsContract.connect(registerer).setController('arkdev', controller.address);
+      expect(await wnsContract.getNameController('arkdev')).to.equal(controller.address);
+
+      await wnsContract.connect(controller).setAddressRecord('arkdev', 'test', otherAddress.address, 3600);
+      const addressRecord = await wnsContract.getNameAddressRecord('arkdev', 'test');
+      const defaultAddressRecord = await wnsContract.getNameAddressRecord('arkdev', 'evm_default');
+      const addressRecords = await wnsContract.getNameAddressRecordsList('arkdev');
+      expect(addressRecord.value).to.equal(otherAddress.address);
+      expect(addressRecord.ttl).to.equal(3600);
+      expect(defaultAddressRecord.value).to.equal(registerer.address);
+      expect(addressRecords[0]).to.equal('evm_default');
+      expect(addressRecords[1]).to.equal('test');
+
+      await wnsContract.connect(registerer).setStringRecord('arkdev', 'test1', 'something', 'A', 3600);
+      const stringRecord = await wnsContract.getNameStringRecord('arkdev', 'test1');
+      const stringRecords = await wnsContract.getNameStringRecordsList('arkdev');
+      expect(stringRecord.value).to.equal('something');
+      expect(stringRecord.typeOf).to.equal('A');
+      expect(stringRecord.ttl).to.equal(3600);
+      expect(stringRecords[0]).to.equal('test1');
+
+      await wnsContract.connect(controller).setUintRecord('arkdev', 'test2', 1234, 3600);
+      const uintRecord = await wnsContract.getNameUintRecord('arkdev', 'test2');
+      const uintRecords = await wnsContract.getNameUintRecordsList('arkdev');
+      expect(uintRecord.value).to.equal(1234);
+      expect(uintRecord.ttl).to.equal(3600);
+      expect(uintRecords[0]).to.equal('test2');
+
+      await wnsContract.connect(controller).setIntRecord('arkdev', 'test3', -1234, 3600);
+      const intRecord = await wnsContract.getNameIntRecord('arkdev', 'test3');
+      const intRecords = await wnsContract.getNameIntRecordsList('arkdev');
+      expect(intRecord.value).to.equal(-1234);
+      expect(intRecord.ttl).to.equal(3600);
+      expect(intRecords[0]).to.equal('test3');
+
+      await expect(wnsContract.connect(otherAddress).setAddressRecord('arkdev', 'test', otherAddress.address, 3600)).to.be.reverted;
+      await expect(wnsContract.connect(otherAddress).setStringRecord('arkdev', 'test1', 'new', 'A', 3600)).to.be.reverted;
+      await expect(wnsContract.connect(otherAddress).setUintRecord('arkdev', 'test2', 4567, 3600)).to.be.reverted;
+      await expect(wnsContract.connect(otherAddress).setIntRecord('arkdev', 'test3', -4567, 3600)).to.be.reverted;
+    });
   });
 
   describe('Alternate Resolver', () => {

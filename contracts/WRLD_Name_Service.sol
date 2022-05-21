@@ -302,7 +302,6 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
   modifier isOwnerOrController(string memory _name) {
     require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
-
     _;
   }
 }
