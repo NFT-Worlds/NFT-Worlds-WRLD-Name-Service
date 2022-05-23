@@ -41,6 +41,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
   mapping(uint256 => mapping(string => IntRecord)) private wrldNameIntRecords;
   mapping(uint256 => string[]) private wrldNameIntRecordsList;
 
+  address private approvedWithdrawer;
+
   struct WRLDName {
     string name;
     address controller;
@@ -297,6 +299,10 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     annualWrldPrice = _annualWrldPrice;
   }
 
+  function setApprovedWithdrawer(address _approvedWithdrawer) external onlyOwner {
+    approvedWithdrawer = _approvedWithdrawer;
+  }
+
   function enableRegistration() external onlyOwner {
     registrationEnabled = true;
   }
@@ -305,8 +311,10 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Withdrawal *
    **************/
 
-  function withdrawWrld(address toAddress) external onlyOwner {
-    wrld.transferFrom(address(this), toAddress, wrld.balanceOf(address(this)));
+  function withdrawWrld(address toAddress) external {
+    require(msg.sender == owner() || msg.sender == approvedWithdrawer, "Not approved to withdraw");
+
+    wrld.transfer(toAddress, wrld.balanceOf(address(this)));
   }
 
   /*************
