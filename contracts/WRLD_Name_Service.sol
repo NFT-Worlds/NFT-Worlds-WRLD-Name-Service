@@ -17,6 +17,11 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * @dev @iamarkdev was here
    * */
 
+  event NameRegistered(string indexed idxName, string name, uint16 registrationYears);
+  event NameRegistrationExtended(string indexed idxName, string name, uint16 additionalYears);
+  event NameControllerUpdated(string indexed idxName, string name, address controller);
+  event NameResolverUpdated(string indexed idxName, string name, address resolver);
+
   IERC20 immutable wrld;
   INFTW_Whitelist immutable whitelist;
 
@@ -69,7 +74,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Registration *
    ****************/
 
-  function registerWithPass(string[] calldata _names, uint8[] calldata _registrationYears) external nonReentrant {
+  function registerWithPass(string[] calldata _names, uint16[] calldata _registrationYears) external nonReentrant {
     if (msg.sender != owner()) {
       whitelist.burnTypeForOwnerAddress(PREREGISTRATION_PASS_TYPE_ID, _names.length, msg.sender);
     }
@@ -81,13 +86,13 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     _register(_names, _registrationYears, true);
   }
 
-  function register(string[] calldata _names, uint8[] calldata _registrationYears) external nonReentrant {
+  function register(string[] calldata _names, uint16[] calldata _registrationYears) external nonReentrant {
     require(registrationEnabled, "Registration is not enabled.");
 
     _register(_names, _registrationYears, false);
   }
 
-  function _register(string[] calldata _names, uint8[] calldata _registrationYears, bool _free) private {
+  function _register(string[] calldata _names, uint16[] calldata _registrationYears, bool _free) private {
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
     uint256 mintCount = 0;
@@ -121,6 +126,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
         nameTokenId[name] = newTokenId;
 
         mintCount++;
+
+        emit NameRegistered(name, name, _registrationYears[i]);
       }
 
       sumYears += _registrationYears[i];
@@ -139,7 +146,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Extension *
    *************/
 
-  function extendRegistration(string[] calldata _names, uint8[] calldata _additionalYears) external {
+  function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external {
     require(_names.length == _additionalYears.length, "Arg size mismatched");
 
     uint256 sumYears = 0;
@@ -151,6 +158,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
       wrldName.expiresAt = wrldName.expiresAt + YEAR_SECONDS * _additionalYears[i];
 
       sumYears += _additionalYears[i];
+
+      emit NameRegistrationExtended(_names[i], _names[i], _additionalYears[i]);
     }
 
     wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
@@ -244,6 +253,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     require(getNameOwner(_name) == msg.sender, "Sender is not owner");
 
     wrldNames[nameTokenId[_name]].controller = _controller;
+
+    emit NameControllerUpdated(_name, _name, _controller);
   }
 
   function setAlternateResolver(string calldata _name, address _alternateResolver) external isOwnerOrController(_name) {
@@ -252,6 +263,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     require(resolver.supportsInterface(type(IWRLD_Name_Service_Resolver).interfaceId), "Invalid resolver");
 
     wrldNames[nameTokenId[_name]].alternateResolver = resolver;
+
+    emit NameResolverUpdated(_name, _name, _alternateResolver);
   }
 
   function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) public isOwnerOrController(_name) {
@@ -261,6 +274,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     });
 
     wrldNameAddressRecordsList[nameTokenId[_name]].push(_record);
+
+    emit AddressRecordUpdated(_name, _name, _record, _value, _ttl);
   }
 
   function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external isOwnerOrController(_name) {
@@ -271,6 +286,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     });
 
     wrldNameStringRecordsList[nameTokenId[_name]].push(_record);
+
+    emit StringRecordUpdated(_name, _name, _record, _value, _typeOf, _ttl);
   }
 
   function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external isOwnerOrController(_name) {
@@ -280,6 +297,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     });
 
     wrldNameUintRecordsList[nameTokenId[_name]].push(_record);
+
+    emit UintRecordUpdated(_name, _name, _record, _value, _ttl);
   }
 
   function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external isOwnerOrController(_name) {
@@ -289,6 +308,8 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     });
 
     wrldNameIntRecordsList[nameTokenId[_name]].push(_record);
+
+    emit IntRecordUpdated(_name, _name, _record, _value, _ttl);
   }
 
   /*********
