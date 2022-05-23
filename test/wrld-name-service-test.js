@@ -233,7 +233,25 @@ describe('World Name Service Contract', () => {
   });
 
   describe('Alternate Resolver', () => {
+    it('Sets and properly uses an alternate resolver', async () => {
+      const AlternateResolverFactory = await ethers.getContractFactory('Mock_Alternate_Resolver');
+      const alternateResolver = await AlternateResolverFactory.deploy();
 
+      await wnsContract.registerWithPass([ 'arkdev' ], [ 1 ]);
+      await wnsContract.setAlternateResolver('arkdev', alternateResolver.address);
+
+      expect((await wnsContract.getNameAddressRecord('arkdev', 'test')).value).to.equal('0x9A80c6437ad9b6E7a1608814cBab93dEeecf388a');
+      expect((await wnsContract.getNameAddressRecordsList('arkdev'))[0]).to.equal('test2');
+
+      expect((await wnsContract.getNameStringRecord('arkdev', 'test')).value).to.equal('127.0.0.1');
+      expect((await wnsContract.getNameStringRecordsList('arkdev'))[0]).to.equal('test1');
+
+      expect((await wnsContract.getNameUintRecord('arkdev', 'test')).value).to.equal(123);
+      expect((await wnsContract.getNameUintRecordsList('arkdev'))[0]).to.equal('test3');
+
+      expect((await wnsContract.getNameIntRecord('arkdev', 'test')).value).to.equal(-123);
+      expect((await wnsContract.getNameIntRecordsList('arkdev'))[0]).to.equal('test4');
+    });
   });
 
   /**
