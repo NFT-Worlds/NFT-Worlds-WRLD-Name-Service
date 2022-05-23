@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./ERC721AF/ERC721AF.sol";
-
+import "./INFTW_Whitelist.sol";
 import "./IWRLD_Name_Service_Resolver.sol";
 
 contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, ReentrancyGuard {
@@ -18,8 +18,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * */
 
   IERC20 immutable wrld;
+  INFTW_Whitelist immutable whitelist;
 
   uint256 private constant YEAR_SECONDS = 31536000;
+  uint256 private constant PREREGISTRATION_PASS_TYPE_ID = 2;
+
+  bool public registrationEnabled = false;
 
   uint256 public annualWrldPrice = 500 ether; // $WRLD
   mapping(uint256 => WRLDName) public wrldNames;
@@ -44,8 +48,9 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     uint256 expiresAt;
   }
 
-  constructor(address _wrld) ERC721AF("WRLD Name Service", "WNS") {
+  constructor(address _wrld, address _whitelist) ERC721AF("WRLD Name Service", "WNS") {
     wrld = IERC20(_wrld);
+    whitelist = INFTW_Whitelist(_whitelist);
   }
 
   /************
@@ -62,7 +67,25 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Registration *
    ****************/
 
+  function registerWithPass(string[] calldata _names, uint8[] calldata _registrationYears) external nonReentrant {
+    if (msg.sender != owner()) {
+      whitelist.burnTypeForOwnerAddress(PREREGISTRATION_PASS_TYPE_ID, _names.length, msg.sender);
+    }
+
+    for (uint256 i = 0; i < _registrationYears.length; i++) {
+      require(_registrationYears[i] == 1, "Pass only allows 1 year registration.");
+    }
+
+    _register(_names, _registrationYears, true);
+  }
+
   function register(string[] calldata _names, uint8[] calldata _registrationYears) external nonReentrant {
+    require(registrationEnabled, "Registration is not enabled.");
+
+    _register(_names, _registrationYears, false);
+  }
+
+  function _register(string[] calldata _names, uint8[] calldata _registrationYears, bool _free) private {
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
     uint256 mintCount = 0;
@@ -105,8 +128,14 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
       _safeMint(msg.sender, mintCount);
     }
 
-    wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
+    if (!_free) {
+      wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
+    }
   }
+
+  /*************
+   * Extension *
+   *************/
 
   function extendRegistration(string[] calldata _names, uint8[] calldata _additionalYears) external {
     require(_names.length == _additionalYears.length, "Arg size mismatched");
@@ -266,6 +295,10 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
   function setAnnualWrldPrice(uint256 _annualWrldPrice) external onlyOwner {
     annualWrldPrice = _annualWrldPrice;
+  }
+
+  function enableRegistration() external onlyOwner {
+    registrationEnabled = true;
   }
 
   /**************

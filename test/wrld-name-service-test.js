@@ -1,7 +1,6 @@
 const { expect } = require('chai');
-const { ethers, waffle } = require('hardhat');
+const { ethers } = require('hardhat');
 
-const ANNUAL_WRLD_PRICE = 500;
 const YEAR_SECONDS = 31536000;
 
 describe('World Name Service Contract', () => {
@@ -9,15 +8,20 @@ describe('World Name Service Contract', () => {
   let otherAddresses;
   let wnsContract;
   let wrldContract;
+  let whitelistContract;
 
   beforeEach(async () => {
     [ owner, ...otherAddresses ] = await ethers.getSigners();
 
     const WRLDNameServiceFactory = await ethers.getContractFactory('WRLD_Name_Service');
     const WRLDTokenFactory = await ethers.getContractFactory('WRLD_Token_Ethereum');
+    const WhitelistFactory = await ethers.getContractFactory('NFTW_Whitelist');
 
     wrldContract = await WRLDTokenFactory.deploy();
-    wnsContract = await WRLDNameServiceFactory.deploy(wrldContract.address);
+    whitelistContract = await WhitelistFactory.deploy();
+    wnsContract = await WRLDNameServiceFactory.deploy(wrldContract.address, whitelistContract.address);
+
+    await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', wnsContract.address);
   });
 
   describe('Deployment', () => {
@@ -34,6 +38,8 @@ describe('World Name Service Contract', () => {
     it('Registers a WRLD name', async () => {
       const registerer = otherAddresses[0];
 
+      await wnsContract.enableRegistration();
+
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
       await wnsContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
@@ -44,8 +50,28 @@ describe('World Name Service Contract', () => {
       expect(name.controller).to.equal(registerer.address);
     });
 
+    it('Registers WRLD names for free using pass or as owner', async () => {
+      await whitelistContract.mint(2, 5);
+
+      // register as owner
+      await wnsContract.registerWithPass([ 'testdev' ], [ 1 ]);
+
+      // register with pass
+      const registerer = otherAddresses[0];
+      await expect(wnsContract.connect(registerer).registerWithPass([ 'eth' ], [ 1 ])).to.be.reverted;
+
+      await whitelistContract.safeTransferFrom(owner.address, registerer.address, 2, 2, 0);
+      await wnsContract.connect(registerer).registerWithPass([ 'eth', 'testtt' ], [ 1, 1 ]);
+
+      // should only allow 1 year registration
+      await expect(wnsContract.connect(registerer).registerWithPass([ 'eth2' ], [ 2 ])).to.be.reverted;
+
+    });
+
     it('Registers multiple WRLD names', async () => {
       const registerer = otherAddresses[0];
+
+      await wnsContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 500000);
 
@@ -66,6 +92,8 @@ describe('World Name Service Contract', () => {
     it('Registers WRLD name and extends registration', async () => {
       const registerer = otherAddresses[0];
 
+      await wnsContract.enableRegistration();
+
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
       await wnsContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
@@ -77,6 +105,8 @@ describe('World Name Service Contract', () => {
     it('Registers WRLD name and allows a new registrant if expiration time has passed', async () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];
+
+      await wnsContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registererOne, 50000);
       await mintWRLDToAddressAndAllow(registererTwo, 50000);
@@ -97,6 +127,8 @@ describe('World Name Service Contract', () => {
     it('Registers WRLD name using emojis', async () => {
       const registerer = otherAddresses[0];
 
+      await wnsContract.enableRegistration();
+
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
       await wnsContract.connect(registerer).register([ '🔥🚀🌕' ], [ 1 ]);
@@ -107,9 +139,24 @@ describe('World Name Service Contract', () => {
       expect(name.controller).to.equal(registerer.address);
     });
 
+    it('Fails to register with pass when no passes owned', async () => {
+      const registerer = otherAddresses[0];
+
+      await expect(wnsContract.connect(registerer).registerWithPass([ 'testing' ], [ 1 ])).to.be.reverted;
+    });
+
+    it('Fails to register when registration is not enabled', async () => {
+      await mintWRLDToAddressAndAllow(owner, 5000);
+
+      await expect(wnsContract.register([ 'arkdev' ], [ 1 ])).to.be.reverted;
+    });
+
+
     it('Fails to register an existing, unexpired name', async () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];
+
+      await wnsContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registererOne, 50000);
       await mintWRLDToAddressAndAllow(registererTwo, 50000);
@@ -124,6 +171,8 @@ describe('World Name Service Contract', () => {
       const registerer = otherAddresses[0];
       const controller = otherAddresses[1];
       const otherAddress = otherAddresses[2];
+
+      await wnsContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
       await wnsContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
@@ -169,6 +218,17 @@ describe('World Name Service Contract', () => {
       await expect(wnsContract.connect(otherAddress).setStringRecord('arkdev', 'test1', 'new', 'A', 3600)).to.be.reverted;
       await expect(wnsContract.connect(otherAddress).setUintRecord('arkdev', 'test2', 4567, 3600)).to.be.reverted;
       await expect(wnsContract.connect(otherAddress).setIntRecord('arkdev', 'test3', -4567, 3600)).to.be.reverted;
+    });
+  });
+
+  describe('Owner Functions', () => {
+    it('Set the annual registration wrld price', async () => {
+      const newPrice = ethers.BigNumber.from(BigInt(9 * 1e18));
+      await wnsContract.setAnnualWrldPrice(newPrice);
+
+      const updatedPrice = await wnsContract.annualWrldPrice();
+
+      expect(updatedPrice.eq(newPrice)).to.equal(true);
     });
   });
 
