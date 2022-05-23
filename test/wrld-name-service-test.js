@@ -268,7 +268,19 @@ describe('World Name Service Contract', () => {
     });
 
     it('Allows approved withdrawer to withdraw', async () => {
-      
+      const registerer = otherAddresses[0];
+      const withdrawer = otherAddresses[1];
+
+      await wnsContract.enableRegistration();
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
+
+      await expect(wnsContract.connect(withdrawer).withdrawWrld(withdrawer.address)).to.be.reverted;
+      await wnsContract.setApprovedWithdrawer(withdrawer.address);
+
+      expect(await wrldContract.balanceOf(owner.address) * 1).to.equal(0);
+      await wnsContract.connect(withdrawer).withdrawWrld(withdrawer.address);
+      expect(await wrldContract.balanceOf(withdrawer.address) / 1e18).to.equal(4000);
     });
 
     it('Fails to withdraw if not owner or approved', async () => {
