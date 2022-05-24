@@ -5,7 +5,7 @@ import "./IWRLD_Name_Service_Metadata.sol";
 
 contract WRLD_Name_Service_Metadata is IWRLD_Name_Service_Metadata {
   function getMetadata(string calldata _name) external pure override returns (string memory) {
-    return _name;
+    return _name; // todo, return SVG
   }
 
   function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
