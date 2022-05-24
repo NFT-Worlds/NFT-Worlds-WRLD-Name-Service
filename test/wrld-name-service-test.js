@@ -54,18 +54,14 @@ describe('World Name Service Contract', () => {
       await whitelistContract.mint(2, 5);
 
       // register as owner
-      await wnsContract.registerWithPass([ 'testdev' ], [ 1 ]);
+      await wnsContract.registerWithPass([ 'testdev' ]);
 
       // register with pass
       const registerer = otherAddresses[0];
       await expect(wnsContract.connect(registerer).registerWithPass([ 'eth' ], [ 1 ])).to.be.reverted;
 
       await whitelistContract.safeTransferFrom(owner.address, registerer.address, 2, 2, 0);
-      await wnsContract.connect(registerer).registerWithPass([ 'eth', 'testtt' ], [ 1, 1 ]);
-
-      // should only allow 1 year registration
-      await expect(wnsContract.connect(registerer).registerWithPass([ 'eth2' ], [ 2 ])).to.be.reverted;
-
+      await wnsContract.connect(registerer).registerWithPass([ 'eth', 'testtt' ]);
     });
 
     it('Registers multiple WRLD names', async () => {
@@ -142,7 +138,7 @@ describe('World Name Service Contract', () => {
     it('Fails to register with pass when no passes owned', async () => {
       const registerer = otherAddresses[0];
 
-      await expect(wnsContract.connect(registerer).registerWithPass([ 'testing' ], [ 1 ])).to.be.reverted;
+      await expect(wnsContract.connect(registerer).registerWithPass([ 'testing' ])).to.be.reverted;
     });
 
     it('Fails to register when registration is not enabled', async () => {
@@ -237,7 +233,7 @@ describe('World Name Service Contract', () => {
       const AlternateResolverFactory = await ethers.getContractFactory('Mock_Alternate_Resolver');
       const alternateResolver = await AlternateResolverFactory.deploy();
 
-      await wnsContract.registerWithPass([ 'arkdev' ], [ 1 ]);
+      await wnsContract.registerWithPass([ 'arkdev' ]);
       await wnsContract.setAlternateResolver('arkdev', alternateResolver.address);
 
       expect((await wnsContract.getNameAddressRecord('arkdev', 'test')).value).to.equal('0x9A80c6437ad9b6E7a1608814cBab93dEeecf388a');

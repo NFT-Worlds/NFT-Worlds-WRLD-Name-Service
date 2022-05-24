@@ -80,16 +80,18 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Registration *
    ****************/
 
-  function registerWithPass(string[] calldata _names, uint16[] calldata _registrationYears) external nonReentrant {
+  function registerWithPass(string[] calldata _names) external nonReentrant {
     if (msg.sender != owner()) {
       whitelist.burnTypeForOwnerAddress(PREREGISTRATION_PASS_TYPE_ID, _names.length, msg.sender);
     }
 
-    for (uint256 i = 0; i < _registrationYears.length; i++) {
-      require(_registrationYears[i] == 1, "Pass only allows 1 year registration.");
+    uint16[] memory registrationYears = new uint16[](_names.length);
+
+    for (uint256 i = 0; i < _names.length; i++) {
+      registrationYears[i] = 1;
     }
 
-    _register(_names, _registrationYears, true);
+    _register(_names, registrationYears, true);
   }
 
   function register(string[] calldata _names, uint16[] calldata _registrationYears) external nonReentrant {
@@ -98,7 +100,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     _register(_names, _registrationYears, false);
   }
 
-  function _register(string[] calldata _names, uint16[] calldata _registrationYears, bool _free) private {
+  function _register(string[] calldata _names, uint16[] memory _registrationYears, bool _free) private {
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
     uint256 mintCount = 0;
