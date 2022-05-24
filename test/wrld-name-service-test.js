@@ -290,6 +290,24 @@ describe('World Name Service Contract', () => {
     });
   });
 
+  describe('Metadata', () => {
+    it('Sets metadata contract and returns expected data', async () => {
+      const registerer = otherAddresses[0];
+      const unrevealedUri = 'ipfs://123123';
+
+      const NameMetadataFactory = await ethers.getContractFactory('WRLD_Name_Service_Metadata');
+      const metadata = await NameMetadataFactory.deploy();
+
+      await wnsContract.enableRegistration();
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
+      await wnsContract.setUnrevealedUri(unrevealedUri);
+      expect(await wnsContract.tokenURI(1)).to.equal(unrevealedUri);
+      await wnsContract.setMetadataContract(metadata.address);
+      expect(await wnsContract.tokenURI(1)).to.equal('arkdev');
+    });
+  });
+
   /**
    * Helpers
    */

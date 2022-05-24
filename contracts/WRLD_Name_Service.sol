@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ERC721AF/ERC721AF.sol";
 import "./INFTW_Whitelist.sol";
 import "./IWRLD_Name_Service_Resolver.sol";
+import "./IWRLD_Name_Service_Metadata.sol";
 
 contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, ReentrancyGuard {
   using Strings for uint256;
@@ -24,6 +25,9 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
   IERC20 immutable wrld;
   INFTW_Whitelist immutable whitelist;
+  IWRLD_Name_Service_Metadata metadata;
+
+  string unrevealedUri;
 
   uint256 private constant YEAR_SECONDS = 31536000;
   uint256 private constant PREREGISTRATION_PASS_TYPE_ID = 2;
@@ -67,7 +71,11 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
   function tokenURI(uint256 _tokenId) override public view returns (string memory) {
     require(_exists(_tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-    return ""; // todo
+    if (address(metadata) == address(0)) {
+      return unrevealedUri;
+    }
+
+    return metadata.getMetadata(wrldNames[_tokenId].name);
   }
 
   /****************
@@ -322,6 +330,18 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
   function setApprovedWithdrawer(address _approvedWithdrawer) external onlyOwner {
     approvedWithdrawer = _approvedWithdrawer;
+  }
+
+  function setMetadataContract(address _metadata) external onlyOwner {
+    IWRLD_Name_Service_Metadata metadataContract = IWRLD_Name_Service_Metadata(_metadata);
+
+    require(metadataContract.supportsInterface(type(IWRLD_Name_Service_Metadata).interfaceId), "Invalid metadata contract");
+
+    metadata = metadataContract;
+  }
+
+  function setUnrevealedUri(string calldata _unrevealedUri) external onlyOwner {
+    unrevealedUri = _unrevealedUri;
   }
 
   function enableRegistration() external onlyOwner {
