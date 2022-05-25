@@ -73,7 +73,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
       return "";
     }
 
-    return metadata.getMetadata(wrldNames[_tokenId].name);
+    return metadata.getMetadata(wrldNames[_tokenId].name, wrldNames[_tokenId].expiresAt);
   }
 
   /****************
