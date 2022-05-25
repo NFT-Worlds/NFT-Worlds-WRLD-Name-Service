@@ -53,15 +53,16 @@ describe('World Name Service Contract', () => {
     it('Registers WRLD names for free using pass or as owner', async () => {
       await whitelistContract.mint(2, 5);
 
-      // register as owner
-      await wnsContract.registerWithPass([ 'testdev' ]);
+      // register as owner, allowing 2 char name
+      await wnsContract.registerWithPass([ 'tv' ]);
 
       // register with pass
       const registerer = otherAddresses[0];
-      await expect(wnsContract.connect(registerer).registerWithPass([ 'eth' ], [ 1 ])).to.be.reverted;
+      await expect(wnsContract.connect(registerer).registerWithPass([ 'eth1' ], [ 1 ])).to.be.reverted;
 
       await whitelistContract.safeTransferFrom(owner.address, registerer.address, 2, 2, 0);
-      await wnsContract.connect(registerer).registerWithPass([ 'eth', 'testtt' ]);
+      await expect(wnsContract.connect(registerer).registerWithPass([ 't' ])).to.be.reverted; // should not allow 1 or 2 char
+      await wnsContract.connect(registerer).registerWithPass([ 'eth1', 'testtt' ]);
     });
 
     it('Registers multiple WRLD names', async () => {

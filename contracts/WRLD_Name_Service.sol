@@ -83,7 +83,9 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    ****************/
 
   function registerWithPass(string[] calldata _names) external nonReentrant {
-    if (msg.sender != owner()) {
+    bool senderIsOwner = msg.sender == owner();
+
+    if (!senderIsOwner) {
       whitelist.burnTypeForOwnerAddress(PREREGISTRATION_PASS_TYPE_ID, _names.length, msg.sender);
     }
 
@@ -91,6 +93,10 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
     for (uint256 i = 0; i < _names.length; i++) {
       registrationYears[i] = 1;
+
+      if (!senderIsOwner) {
+        require(getPrice(_names[i]) < 1000000 ether, "Name not available for sale");
+      }
     }
 
     _register(_names, registrationYears, true);
