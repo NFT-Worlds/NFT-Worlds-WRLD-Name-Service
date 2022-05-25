@@ -10,9 +10,11 @@ import "./ERC721AF/ERC721AF.sol";
 import "./INFTW_Whitelist.sol";
 import "./IWRLD_Name_Service_Resolver.sol";
 import "./IWRLD_Name_Service_Metadata.sol";
+import "./StringUtils.sol";
 
 contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, ReentrancyGuard {
   using Strings for uint256;
+  using StringUtils for *;
 
   /**
    * @dev @iamarkdev was here
@@ -32,7 +34,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
   bool public registrationEnabled = false;
 
-  uint256 public annualWrldPrice = 500 ether; // $WRLD
+  uint256 public annualWrldPrice[5] = [1e70, 1e70, 20000 ether, 2000 ether, 500 ether]; // $WRLD, 1 char to 5 chars
   mapping(uint256 => WRLDName) public wrldNames;
   mapping(string => uint256) public nameTokenId;
 
@@ -104,7 +106,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
     uint256 mintCount = 0;
-    uint256 sumYears = 0;
+    uint256 sumPrice = 0;
     uint256 tokenStartId = _currentIndex;
 
     for (uint256 i = 0; i < _names.length; i++) {
@@ -120,7 +122,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
         wrldNames[existingTokenId].expiresAt = expiresAt;
 
-        safeTransferFromForced(getNameOwner(name), msg.sender, existingTokenId, "");
+        _safeTransferFromForced(getNameOwner(name), msg.sender, existingTokenId, "");
       } else {
         uint256 newTokenId = tokenStartId + mintCount;
 
@@ -138,7 +140,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
         emit NameRegistered(name, name, _registrationYears[i]);
       }
 
-      sumYears += _registrationYears[i];
+      sumPrice += _registrationYears[i] * getPrice(_names[i]);
     }
 
     if (mintCount > 0) {
@@ -146,7 +148,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
     }
 
     if (!_free) {
-      wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
+      wrld.transferFrom(msg.sender, address(this), sumPrice);
     }
   }
 
@@ -157,7 +159,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
   function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external {
     require(_names.length == _additionalYears.length, "Arg size mismatched");
 
-    uint256 sumYears = 0;
+    uint256 sumPrice = 0;
 
     for (uint256 i = 0; i < _names.length; i++) {
       require(_additionalYears[i] > 0, "Years must be greater than zero");
@@ -165,12 +167,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
       WRLDName storage wrldName = wrldNames[nameTokenId[_names[i]]];
       wrldName.expiresAt = wrldName.expiresAt + YEAR_SECONDS * _additionalYears[i];
 
-      sumYears += _additionalYears[i];
+      sumPrice += _additionalYears[i] * getPrice(_names[i]);
 
       emit NameRegistrationExtended(_names[i], _names[i], _additionalYears[i]);
     }
 
-    wrld.transferFrom(msg.sender, address(this), sumYears * annualWrldPrice);
+    wrld.transferFrom(msg.sender, address(this), sumPrice);
   }
 
   /***********
@@ -253,6 +255,17 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
       : wrldNameIntRecordsList[nameTokenId[_name]];
   }
 
+  function getPrice(string calldata _name) internal view returns (uint price) {
+    uint len = _name.strlen();
+    if (len > 0 && len <= 5) {
+      price = annualWrldPrice[len-1];
+    } else if (len > 5) {
+      price = annualWrldPrice[4];
+    } else {
+      revert("Invalid name");
+    }
+  }
+
   /***********
    * Control *
    ***********/
@@ -324,8 +337,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Owner *
    *********/
 
-  function setAnnualWrldPrice(uint256 _annualWrldPrice) external onlyOwner {
-    annualWrldPrice = _annualWrldPrice;
+  function setAnnualWrldPrice(uint256[] memory _annualWrldPrices) external onlyOwner {
+    annualWrldPrice[0] = _annualWrldPrices[0];
+    annualWrldPrice[1] = _annualWrldPrices[1];
+    annualWrldPrice[2] = _annualWrldPrices[2];
+    annualWrldPrice[3] = _annualWrldPrices[3];
+    annualWrldPrice[4] = _annualWrldPrices[4];
   }
 
   function setApprovedWithdrawer(address _approvedWithdrawer) external onlyOwner {

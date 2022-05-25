@@ -287,7 +287,7 @@ contract ERC721AF is Context, ERC165, IERC721A {
      * @dev Allows specific contract conditions to force transfers without direct owner authorization
      */
 
-    function safeTransferFromForced(
+    function _safeTransferFromForced(
       address from,
       address to,
       uint256 tokenId,
