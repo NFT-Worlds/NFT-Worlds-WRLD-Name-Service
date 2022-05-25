@@ -34,7 +34,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
 
   bool public registrationEnabled = false;
 
-  uint256 public annualWrldPrice[5] = [1e70, 1e70, 20000 ether, 2000 ether, 500 ether]; // $WRLD, 1 char to 5 chars
+  uint256[5] public annualWrldPrices = [ 1e70, 1e70, 20000 ether, 2000 ether, 500 ether ]; // $WRLD, 1 char to 5 chars
   mapping(uint256 => WRLDName) public wrldNames;
   mapping(string => uint256) public nameTokenId;
 
@@ -258,9 +258,9 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
   function getPrice(string calldata _name) internal view returns (uint price) {
     uint len = _name.strlen();
     if (len > 0 && len <= 5) {
-      price = annualWrldPrice[len-1];
+      price = annualWrldPrices[len-1];
     } else if (len > 5) {
-      price = annualWrldPrice[4];
+      price = annualWrldPrices[4];
     } else {
       revert("Invalid name");
     }
@@ -337,12 +337,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service_Resolver, Ownable, Re
    * Owner *
    *********/
 
-  function setAnnualWrldPrice(uint256[] memory _annualWrldPrices) external onlyOwner {
-    annualWrldPrice[0] = _annualWrldPrices[0];
-    annualWrldPrice[1] = _annualWrldPrices[1];
-    annualWrldPrice[2] = _annualWrldPrices[2];
-    annualWrldPrice[3] = _annualWrldPrices[3];
-    annualWrldPrice[4] = _annualWrldPrices[4];
+  function setAnnualWrldPrices(uint256[] memory _annualWrldPrices) external onlyOwner {
+    annualWrldPrices[0] = _annualWrldPrices[0];
+    annualWrldPrices[1] = _annualWrldPrices[1];
+    annualWrldPrices[2] = _annualWrldPrices[2];
+    annualWrldPrices[3] = _annualWrldPrices[3];
+    annualWrldPrices[4] = _annualWrldPrices[4];
   }
 
   function setApprovedWithdrawer(address _approvedWithdrawer) external onlyOwner {

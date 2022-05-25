@@ -71,7 +71,7 @@ describe('World Name Service Contract', () => {
 
       await mintWRLDToAddressAndAllow(registerer, 500000);
 
-      const names = [ 'arktech', 'ark', 'wrld', 'dev', 'yolo' ];
+      const names = [ 'arktech', 'arktechs', 'wrldmind', 'devtest', 'yoloman' ];
       const years = [ 10, 10, 10, 15, 10 ];
 
       await wnsContract.connect(registerer).register(names, years);
@@ -127,11 +127,11 @@ describe('World Name Service Contract', () => {
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
-      await wnsContract.connect(registerer).register([ '🔥🚀🌕' ], [ 1 ]);
+      await wnsContract.connect(registerer).register([ '🔥🚀🌕🌕' ], [ 2 ]);
 
-      const name = await wnsContract.getName('🔥🚀🌕');
+      const name = await wnsContract.getName('🔥🚀🌕🌕');
 
-      expect(name.name).to.equal('🔥🚀🌕');
+      expect(name.name).to.equal('🔥🚀🌕🌕');
       expect(name.controller).to.equal(registerer.address);
     });
 
@@ -219,12 +219,20 @@ describe('World Name Service Contract', () => {
 
   describe('Owner Functions', () => {
     it('Set the annual registration wrld price', async () => {
-      const newPrice = ethers.BigNumber.from(BigInt(9 * 1e18));
-      await wnsContract.setAnnualWrldPrice(newPrice);
+      const newPrice = ethers.BigNumber.from(BigInt(10 * 1e18));
+      const newPrices = [
+        newPrice, // 1 char
+        newPrice, // 2 char
+        newPrice, // 3 char
+        newPrice, // 4 char
+        newPrice, // 5+ char
+      ];
 
-      const updatedPrice = await wnsContract.annualWrldPrice();
+      await wnsContract.setAnnualWrldPrices(newPrices);
 
-      expect(updatedPrice.eq(newPrice)).to.equal(true);
+      for (let i = 0; i < newPrices.length; i++) {
+        expect(await wnsContract.annualWrldPrices(i)).to.equal(newPrices[i]);
+      }
     });
   });
 
@@ -298,7 +306,7 @@ describe('World Name Service Contract', () => {
       await wnsContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
       expect(await wnsContract.tokenURI(1)).to.equal('');
       await wnsContract.setMetadataContract(metadata.address);
-      expect(await wnsContract.tokenURI(1)).to.equal('arkdev');
+      expect((await wnsContract.tokenURI(1)).includes('arkdev')).to.equal(true);
     });
   });
 
