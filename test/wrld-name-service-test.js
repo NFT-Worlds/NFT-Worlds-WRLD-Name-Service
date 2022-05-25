@@ -7,6 +7,7 @@ describe('World Name Service Contract', () => {
   let owner;
   let otherAddresses;
   let wnsContract;
+  let wnsResolverContract;
   let wrldContract;
   let whitelistContract;
 
@@ -14,13 +15,16 @@ describe('World Name Service Contract', () => {
     [ owner, ...otherAddresses ] = await ethers.getSigners();
 
     const WRLDNameServiceFactory = await ethers.getContractFactory('WRLD_Name_Service');
+    const WRLDNameServiceResolverFactory = await ethers.getContractFactory('WRLD_NameService_Resolver_V1');
     const WRLDTokenFactory = await ethers.getContractFactory('WRLD_Token_Ethereum');
     const WhitelistFactory = await ethers.getContractFactory('NFTW_Whitelist');
 
     wrldContract = await WRLDTokenFactory.deploy();
     whitelistContract = await WhitelistFactory.deploy();
     wnsContract = await WRLDNameServiceFactory.deploy(wrldContract.address, whitelistContract.address);
+    wnsResolverContract = await WRLDNameServiceResolverFactory.deploy(wnsContract.address);
 
+    await wnsContract.setDefaultResolverContract(wnsResolverContract.address);
     await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', wnsContract.address);
   });
 
@@ -82,7 +86,7 @@ describe('World Name Service Contract', () => {
         expect(wrldName.name).to.equal(names[i]);
         expect(await wnsContract.getNameExpiration(wrldName.name)).to.equal(wrldName.expiresAt);
         expect(await wnsContract.getTokenName(i + 1)).to.equal(wrldName.name);
-        expect(await wnsContract.nameTokenId(wrldName.name)).to.equal(i + 1);
+        expect(await wnsContract.getNameTokenId(wrldName.name)).to.equal(i + 1);
       }
     });
 
@@ -111,14 +115,14 @@ describe('World Name Service Contract', () => {
       await wnsContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
       await expect(wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
 
-      const tokenId = await wnsContract.nameTokenId('arkdev') * 1;
+      const tokenId = await wnsContract.getNameTokenId('arkdev') * 1;
 
       await ethers.provider.send('evm_mine', [ Date.now() / 1000 + (YEAR_SECONDS * 2) + 600 ]);
 
       await wnsContract.connect(registererTwo).register([ 'arkdev', 'newark' ], [ 3, 1 ]);
       await expect(wnsContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
 
-      expect(await wnsContract.nameTokenId('arkdev') * 1).to.equal(tokenId);
+      expect(await wnsContract.getNameTokenId('arkdev') * 1).to.equal(tokenId);
     });
 
     it('Registers WRLD name using emojis', async () => {

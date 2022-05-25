@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface IWRLD_Name_Service is IERC165 {
   function getNameTokenId(string calldata _name) external view returns (uint256);
-  function getNameOwner(string memory _name) external view returns (address);
-  function getNameController(string memory _name) external view returns (address);
 
   event NameRegistered(string indexed idxName, string name, uint16 registrationYears);
   event NameRegistrationExtended(string indexed idxName, string name, uint16 additionalYears);

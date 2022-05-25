@@ -201,11 +201,11 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
     return wrldNames[nameTokenId[_name]];
   }
 
-  function getNameOwner(string memory _name) public view override returns (address) {
+  function getNameOwner(string memory _name) public view returns (address) {
     return ownerOf(nameTokenId[_name]);
   }
 
-  function getNameController(string memory _name) public view override returns (address) {
+  function getNameController(string memory _name) public view returns (address) {
     return wrldNames[nameTokenId[_name]].controller;
   }
 
