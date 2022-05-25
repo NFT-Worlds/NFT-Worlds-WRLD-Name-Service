@@ -9,6 +9,22 @@ contract Mock_Alternate_Resolver is IWRLD_Name_Service_Resolver {
   string[] uintRecords = ["test3", "test3"];
   string[] intRecords = ["test4", "test4"];
 
+  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external pure override {
+    _name; _record; _value; _typeOf; _ttl; // ignore for mock
+  }
+
+  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) external pure override {
+    _name; _record; _value; _ttl;
+  }
+
+  function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external pure override {
+    _name; _record; _value; _ttl;
+  }
+
+  function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external pure override {
+    _name; _record; _value; _ttl;
+  }
+
   function getNameStringRecord(string calldata _name, string calldata _record) external pure override returns (StringRecord memory) {
     _name; _record;
     return StringRecord({
