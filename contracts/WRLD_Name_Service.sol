@@ -106,6 +106,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
       string calldata name = _names[i];
       uint256 expiresAt = block.timestamp + YEAR_SECONDS * _registrationYears[i];
 
+      require(name.validateUriCharset(), "Reserved characters");
       if (nameExists(name)) {
         require(getNameExpiration(name) < block.timestamp, "Unavailable name");
 
