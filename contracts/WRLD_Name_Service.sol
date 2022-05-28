@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -14,7 +13,6 @@ import "./IWRLD_Name_Service.sol";
 import "./StringUtils.sol";
 
 contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownable, ReentrancyGuard {
-  using Strings for uint256;
   using StringUtils for *;
 
   /**
@@ -107,6 +105,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
       uint256 expiresAt = block.timestamp + YEAR_SECONDS * _registrationYears[i];
 
       require(name.validateUriCharset(), "Reserved characters");
+
       if (nameExists(name)) {
         require(getNameExpiration(name) < block.timestamp, "Unavailable name");
 
