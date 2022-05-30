@@ -152,6 +152,17 @@ describe('World Name Service Contract', () => {
       await expect(wnsContract.register([ 'arkdev' ], [ 1 ])).to.be.reverted;
     });
 
+    it('Fails to register 1 or 2 character name if now enabled', async () => {
+      const registerer = otherAddresses[0];
+
+      await wnsContract.enableRegistration();
+      await mintWRLDToAddressAndAllow(registerer, 50000);
+
+      await expect(wnsContract.connect(registerer).register([ 'a' ], [ 1 ])).to.be.reverted;
+      await expect(wnsContract.connect(registerer).register([ 'aa' ], [ 1 ])).to.be.reverted;
+      await wnsContract.connect(registerer).register([ 'aaa' ], [ 1 ]);
+    });
+
 
     it('Fails to register an existing, unexpired name', async () => {
       const registererOne = otherAddresses[0];
@@ -247,7 +258,6 @@ describe('World Name Service Contract', () => {
       await wnsContract.connect(entrySetter).setIntEntry('arkdev', 'damage', -100);
       expect(await wnsContract.getIntEntry(entrySetter.address, 'arkdev', 'damage')).to.equal(-100);
       expect(await wnsContract.getIntEntry(entrySetter.address, 'random', 'damage')).to.equal(0); // never set
-
     });
   });
 
