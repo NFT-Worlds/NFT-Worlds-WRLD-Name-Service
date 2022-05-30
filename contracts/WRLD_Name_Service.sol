@@ -22,7 +22,7 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
   IERC20 immutable wrld;
   INFTW_Whitelist immutable whitelist;
   IWRLD_Name_Service_Metadata metadata;
-  IWRLD_Name_Service_Resolver defaultResolver;
+  IWRLD_Name_Service_Resolver resolver;
 
   uint256 private constant YEAR_SECONDS = 31536000;
   uint256 private constant PREREGISTRATION_PASS_TYPE_ID = 2;
@@ -38,7 +38,6 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
   struct WRLDName {
     string name;
     address controller;
-    IWRLD_Name_Service_Resolver alternateResolver;
     uint256 expiresAt;
   }
 
@@ -120,7 +119,6 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
         wrldNames[newTokenId] = WRLDName({
           name: name,
           controller: msg.sender,
-          alternateResolver: IWRLD_Name_Service_Resolver(address(0)),
           expiresAt: expiresAt
         });
 
@@ -185,10 +183,6 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
     return nameTokenId[_name] != 0;
   }
 
-  function nameAlternateResolverExists(string memory _name) public view returns (bool) {
-    return address(wrldNames[nameTokenId[_name]].alternateResolver) != address(0);
-  }
-
   function getNameTokenId(string calldata _name) external view override returns (uint256) {
     return nameTokenId[_name];
   }
@@ -214,51 +208,51 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
   }
 
   function getNameStringRecord(string calldata _name, string calldata _record) external view returns (StringRecord memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameStringRecord(_name, _record)
-      : defaultResolver.getNameStringRecord(_name, _record);
+    return resolver.getNameStringRecord(_name, _record);
   }
 
   function getNameStringRecordsList(string calldata _name) external view returns (string[] memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameStringRecordsList(_name)
-      : defaultResolver.getNameStringRecordsList(_name);
+    return resolver.getNameStringRecordsList(_name);
   }
 
   function getNameAddressRecord(string calldata _name, string calldata _record) external view returns (AddressRecord memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecord(_name, _record)
-      : defaultResolver.getNameAddressRecord(_name, _record);
+    return resolver.getNameAddressRecord(_name, _record);
   }
 
   function getNameAddressRecordsList(string calldata _name) external view returns (string[] memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameAddressRecordsList(_name)
-      : defaultResolver.getNameAddressRecordsList(_name);
+    return resolver.getNameAddressRecordsList(_name);
   }
 
   function getNameUintRecord(string calldata _name, string calldata _record) external view returns (UintRecord memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameUintRecord(_name, _record)
-      : defaultResolver.getNameUintRecord(_name, _record);
+    return resolver.getNameUintRecord(_name, _record);
   }
 
   function getNameUintRecordsList(string calldata _name) external view returns (string[] memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameUintRecordsList(_name)
-      : defaultResolver.getNameUintRecordsList(_name);
+    return resolver.getNameUintRecordsList(_name);
   }
 
   function getNameIntRecord(string calldata _name, string calldata _record) external view returns (IntRecord memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameIntRecord(_name, _record)
-      : defaultResolver.getNameIntRecord(_name, _record);
+    return resolver.getNameIntRecord(_name, _record);
   }
 
   function getNameIntRecordsList(string calldata _name) external view returns (string[] memory) {
-    return (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver.getNameIntRecordsList(_name)
-      : defaultResolver.getNameIntRecordsList(_name);
+    return resolver.getNameIntRecordsList(_name);
+  }
+
+  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external returns (string memory) {
+    return resolver.getStringEntry(_setter, _name, _entry);
+  }
+
+  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external returns (address) {
+    return resolver.getAddressEntry(_setter, _name, _entry);
+  }
+
+  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external returns (uint256) {
+    return resolver.getUintEntry(_setter, _name, _entry);
+  }
+
+  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external returns (int256) {
+    return resolver.getIntEntry(_setter, _name, _entry);
   }
 
   /***********
@@ -273,54 +267,56 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
     emit NameControllerUpdated(_name, _name, _controller);
   }
 
-  function setAlternateResolver(string calldata _name, address _alternateResolver) external isOwnerOrController(_name) {
-    IWRLD_Name_Service_Resolver resolver = IWRLD_Name_Service_Resolver(_alternateResolver);
-
-    require(resolver.supportsInterface(type(IWRLD_Name_Service_Resolver).interfaceId), "Invalid resolver");
-
-    wrldNames[nameTokenId[_name]].alternateResolver = resolver;
-
-    emit NameResolverUpdated(_name, _name, _alternateResolver);
-  }
-
   function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external isOwnerOrController(_name) {
-    IWRLD_Name_Service_Resolver resolver = (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver
-      : defaultResolver;
-
     resolver.setStringRecord(_name, _record, _value, _typeOf, _ttl);
 
     emit ResolverStringRecordUpdated(_name, _name, _record, _value, _typeOf, _ttl, address(resolver));
   }
 
   function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) public isOwnerOrController(_name) {
-    IWRLD_Name_Service_Resolver resolver = (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver
-      : defaultResolver;
-
     resolver.setAddressRecord(_name, _record, _value, _ttl);
 
     emit ResolverAddressRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
   }
 
   function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external isOwnerOrController(_name) {
-    IWRLD_Name_Service_Resolver resolver = (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver
-      : defaultResolver;
-
     resolver.setUintRecord(_name, _record, _value, _ttl);
 
     emit ResolverUintRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
   }
 
   function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external isOwnerOrController(_name) {
-    IWRLD_Name_Service_Resolver resolver = (nameAlternateResolverExists(_name))
-      ? wrldNames[nameTokenId[_name]].alternateResolver
-      : defaultResolver;
-
     resolver.setIntRecord(_name, _record, _value, _ttl);
 
     emit ResolverIntRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
+  }
+
+  /***********
+   * Entries *
+   ***********/
+
+  function setStringEntry(string calldata _name, string calldata _entry, string calldata _value) external {
+    resolver.setStringEntry(msg.sender, _name, _entry, _value);
+
+    emit ResolverStringEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
+  }
+
+  function setAddressEntry(string calldata _name, string calldata _entry, address _value) external {
+    resolver.setAddressEntry(msg.sender, _name, _entry, _value);
+
+    emit ResolverAddressEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
+  }
+
+  function setUintEntry(string calldata _name, string calldata _entry, uint256 _value) external {
+    resolver.setUintEntry(msg.sender, _name, _entry, _value);
+
+    emit ResolverUintEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
+  }
+
+  function setIntEntry(string calldata _name, string calldata _entry, int256 _value) external {
+    resolver.setIntEntry(msg.sender, _name, _entry, _value);
+
+    emit ResolverIntEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
   }
 
   /*********
@@ -347,12 +343,12 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
     metadata = metadataContract;
   }
 
-  function setDefaultResolverContract(address _defaultResolver) external onlyOwner {
-    IWRLD_Name_Service_Resolver defaultResolverContract = IWRLD_Name_Service_Resolver(_defaultResolver);
+  function setResolverContract(address _resolver) external onlyOwner {
+    IWRLD_Name_Service_Resolver resolverContract = IWRLD_Name_Service_Resolver(_resolver);
 
-    require(defaultResolverContract.supportsInterface(type(IWRLD_Name_Service_Resolver).interfaceId), "Invalid resolver contract");
+    require(resolverContract.supportsInterface(type(IWRLD_Name_Service_Resolver).interfaceId), "Invalid resolver contract");
 
-    defaultResolver = defaultResolverContract;
+    resolver = resolverContract;
   }
 
   function enableRegistration() external onlyOwner {

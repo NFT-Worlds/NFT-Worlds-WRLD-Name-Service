@@ -108,6 +108,46 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
     return wrldNameIntRecordsList[_getNameTokenId(_name)];
   }
 
+  /*****************
+   * Entry Setters *
+   *****************/
+
+  function setStringEntry(address _setter, string calldata _name, string calldata _entry, string calldata _value) external override onlyNameService {
+
+  }
+
+  function setAddressEntry(address _setter, string calldata _name, string calldata _entry, address _value) external override onlyNameService {
+
+  }
+
+  function setUintEntry(address _setter, string calldata _name, string calldata _entry, uint256 _value) external override onlyNameService {
+
+  }
+
+  function setIntEntry(address _setter, string calldata _name, string calldata _entry, int256 _value) external override onlyNameService {
+
+  }
+
+  /*****************
+   * Entry Getters *
+   *****************/
+
+  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external override returns (string memory) {
+
+  }
+
+  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external override returns (address) {
+
+  }
+
+  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external override returns (uint256) {
+
+  }
+
+  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external override returns (int256) {
+
+  }
+
   /**********
    * ERC165 *
    **********/
