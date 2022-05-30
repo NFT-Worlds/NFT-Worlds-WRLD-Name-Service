@@ -24,7 +24,7 @@ describe('World Name Service Contract', () => {
     wnsContract = await WRLDNameServiceFactory.deploy(wrldContract.address, whitelistContract.address);
     wnsResolverContract = await WRLDNameServiceResolverFactory.deploy(wnsContract.address);
 
-    await wnsContract.setDefaultResolverContract(wnsResolverContract.address);
+    await wnsContract.setResolverContract(wnsResolverContract.address);
     await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', wnsContract.address);
   });
 
@@ -238,28 +238,6 @@ describe('World Name Service Contract', () => {
       for (let i = 0; i < newPrices.length; i++) {
         expect(await wnsContract.annualWrldPrices(i)).to.equal(newPrices[i]);
       }
-    });
-  });
-
-  describe('Alternate Resolver', () => {
-    it('Sets and properly uses an alternate resolver', async () => {
-      const AlternateResolverFactory = await ethers.getContractFactory('Mock_Alternate_Resolver');
-      const alternateResolver = await AlternateResolverFactory.deploy();
-
-      await wnsContract.registerWithPass([ 'arkdev' ]);
-      await wnsContract.setAlternateResolver('arkdev', alternateResolver.address);
-
-      expect((await wnsContract.getNameAddressRecord('arkdev', 'test')).value).to.equal('0x9A80c6437ad9b6E7a1608814cBab93dEeecf388a');
-      expect((await wnsContract.getNameAddressRecordsList('arkdev'))[0]).to.equal('test2');
-
-      expect((await wnsContract.getNameStringRecord('arkdev', 'test')).value).to.equal('127.0.0.1');
-      expect((await wnsContract.getNameStringRecordsList('arkdev'))[0]).to.equal('test1');
-
-      expect((await wnsContract.getNameUintRecord('arkdev', 'test')).value).to.equal(123);
-      expect((await wnsContract.getNameUintRecordsList('arkdev'))[0]).to.equal('test3');
-
-      expect((await wnsContract.getNameIntRecord('arkdev', 'test')).value).to.equal(-123);
-      expect((await wnsContract.getNameIntRecordsList('arkdev'))[0]).to.equal('test4');
     });
   });
 
