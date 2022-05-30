@@ -31,16 +31,16 @@ interface IWRLD_Name_Service_Resolver is IERC165, IWRLD_Records {
    ***********/
 
   function setStringEntry(address _setter, string calldata _name, string calldata _entry, string calldata _value) external;
-  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external returns (string memory);
+  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external view returns (string memory);
 
   function setAddressEntry(address _setter, string calldata _name, string calldata _entry, address _value) external;
-  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external returns (address);
+  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external view returns (address);
 
   function setUintEntry(address _setter, string calldata _name, string calldata _entry, uint256 _value) external;
-  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external returns (uint256);
+  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external view returns (uint256);
 
   function setIntEntry(address _setter, string calldata _name, string calldata _entry, int256 _value) external;
-  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external returns (int256);
+  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external view returns (int256);
 
   /**********
    * Events *

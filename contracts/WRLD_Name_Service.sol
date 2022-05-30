@@ -239,19 +239,19 @@ contract WRLD_Name_Service is ERC721AF, IWRLD_Name_Service, IWRLD_Records, Ownab
     return resolver.getNameIntRecordsList(_name);
   }
 
-  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external returns (string memory) {
+  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external view returns (string memory) {
     return resolver.getStringEntry(_setter, _name, _entry);
   }
 
-  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external returns (address) {
+  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external view returns (address) {
     return resolver.getAddressEntry(_setter, _name, _entry);
   }
 
-  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external returns (uint256) {
+  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external view returns (uint256) {
     return resolver.getUintEntry(_setter, _name, _entry);
   }
 
-  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external returns (int256) {
+  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external view returns (int256) {
     return resolver.getIntEntry(_setter, _name, _entry);
   }
 

@@ -19,6 +19,11 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
   mapping(uint256 => mapping(string => IntRecord)) private wrldNameIntRecords;
   mapping(uint256 => string[]) private wrldNameIntRecordsList;
 
+  mapping(bytes32 => string) private wrldNameStringEntries;
+  mapping(bytes32 => address) private wrldNameAddressEntries;
+  mapping(bytes32 => uint) private wrldNameUintEntries;
+  mapping(bytes32 => int) private wrldNameIntEntries;
+
   constructor(address _nameService) {
     nameService = IWRLD_Name_Service(_nameService);
   }
@@ -113,39 +118,39 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
    *****************/
 
   function setStringEntry(address _setter, string calldata _name, string calldata _entry, string calldata _value) external override onlyNameService {
-
+    wrldNameStringEntries[_getEntryHash(_setter, _name, _entry)] = _value;
   }
 
   function setAddressEntry(address _setter, string calldata _name, string calldata _entry, address _value) external override onlyNameService {
-
+    wrldNameAddressEntries[_getEntryHash(_setter, _name, _entry)] = _value;
   }
 
   function setUintEntry(address _setter, string calldata _name, string calldata _entry, uint256 _value) external override onlyNameService {
-
+    wrldNameUintEntries[_getEntryHash(_setter, _name, _entry)] = _value;
   }
 
   function setIntEntry(address _setter, string calldata _name, string calldata _entry, int256 _value) external override onlyNameService {
-
+    wrldNameIntEntries[_getEntryHash(_setter, _name, _entry)] = _value;
   }
 
   /*****************
    * Entry Getters *
    *****************/
 
-  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external override returns (string memory) {
-
+  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (string memory) {
+    return wrldNameStringEntries[_getEntryHash(_setter, _name, _entry)];
   }
 
-  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external override returns (address) {
-
+  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (address) {
+    return wrldNameAddressEntries[_getEntryHash(_setter, _name, _entry)];
   }
 
-  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external override returns (uint256) {
-
+  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (uint256) {
+    return wrldNameUintEntries[_getEntryHash(_setter, _name, _entry)];
   }
 
-  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external override returns (int256) {
-
+  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (int256) {
+    return wrldNameIntEntries[_getEntryHash(_setter, _name, _entry)];
   }
 
   /**********
@@ -162,6 +167,10 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
 
   function _getNameTokenId(string memory _name) private view returns (uint256) {
     return nameService.getNameTokenId(_name);
+  }
+
+  function _getEntryHash(address _setter, string memory _name, string memory _entry) private pure returns (bytes32) {
+    return keccak256(abi.encode(_setter, _name, _entry));
   }
 
   /*************
