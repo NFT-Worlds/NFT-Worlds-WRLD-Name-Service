@@ -222,6 +222,35 @@ describe('World Name Service Contract', () => {
     });
   });
 
+  describe('Name entries', () => {
+    it('Sets and retrieves name entries', async () => {
+      const registerer = otherAddresses[0];
+      const entrySetter = otherAddresses[1];
+
+      await wnsContract.enableRegistration();
+
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
+
+      await wnsContract.connect(entrySetter).setStringEntry('arkdev', 'class', 'dwarf');
+      expect(await wnsContract.getStringEntry(entrySetter.address, 'arkdev', 'class')).to.equal('dwarf');
+      expect(await wnsContract.getStringEntry(entrySetter.address, 'random', 'class')).to.equal(''); // never set
+
+      await wnsContract.connect(entrySetter).setAddressEntry('arkdev', 'manager', otherAddresses[3].address);
+      expect(await wnsContract.getAddressEntry(entrySetter.address, 'arkdev', 'manager')).to.equal(otherAddresses[3].address);
+      expect(await wnsContract.getAddressEntry(entrySetter.address, 'random', 'manager')).to.equal('0x0000000000000000000000000000000000000000'); // never set
+
+      await wnsContract.connect(entrySetter).setUintEntry('arkdev', 'level', 124);
+      expect(await wnsContract.getUintEntry(entrySetter.address, 'arkdev', 'level')).to.equal(124);
+      expect(await wnsContract.getUintEntry(entrySetter.address, 'random', 'level')).to.equal(0); // never set
+
+      await wnsContract.connect(entrySetter).setIntEntry('arkdev', 'damage', -100);
+      expect(await wnsContract.getIntEntry(entrySetter.address, 'arkdev', 'damage')).to.equal(-100);
+      expect(await wnsContract.getIntEntry(entrySetter.address, 'random', 'damage')).to.equal(0); // never set
+
+    });
+  });
+
   describe('Owner Functions', () => {
     it('Set the annual registration wrld price', async () => {
       const newPrice = ethers.BigNumber.from(BigInt(10 * 1e18));
