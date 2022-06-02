@@ -6,35 +6,41 @@ const YEAR_SECONDS = 31536000;
 describe('World Name Service Contract', () => {
   let owner;
   let otherAddresses;
-  let wnsContract;
-  let wnsResolverContract;
+  let registryContract;
+  let registrarContract;
+  let resolverContract;
   let wrldContract;
   let whitelistContract;
 
   beforeEach(async () => {
     [ owner, ...otherAddresses ] = await ethers.getSigners();
 
-    const WRLDNameServiceFactory = await ethers.getContractFactory('WRLD_Name_Service');
+    const WRLDNameServiceRegistryFactory = await ethers.getContractFactory('WRLD_Name_Service_Registry');
+    const WRLDNameServiceRegistrarFactory = await ethers.getContractFactory('WRLD_Name_Service_Registrar');
     const WRLDNameServiceResolverFactory = await ethers.getContractFactory('WRLD_NameService_Resolver_V1');
     const WRLDTokenFactory = await ethers.getContractFactory('WRLD_Token_Ethereum');
     const WhitelistFactory = await ethers.getContractFactory('NFTW_Whitelist');
 
     wrldContract = await WRLDTokenFactory.deploy();
     whitelistContract = await WhitelistFactory.deploy();
-    wnsContract = await WRLDNameServiceFactory.deploy(wrldContract.address, whitelistContract.address);
-    wnsResolverContract = await WRLDNameServiceResolverFactory.deploy(wnsContract.address);
+    registryContract = await WRLDNameServiceRegistryFactory.deploy();
+    registrarContract = await WRLDNameServiceRegistrarFactory.deploy(registryContract.address, wrldContract.address, whitelistContract.address);
+    resolverContract = await WRLDNameServiceResolverFactory.deploy(registryContract.address);
 
-    await wnsContract.setResolverContract(wnsResolverContract.address);
-    await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', wnsContract.address);
+    await registryContract.setResolverContract(resolverContract.address);
+    await registryContract.setApprovedRegistrar(registrarContract.address);
+    await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', registrarContract.address);
   });
 
   describe('Deployment', () => {
     it('properly initializes contract', async () => {
       await wrldContract.deployed();
-      await wnsContract.deployed();
+      await registryContract.deployed();
+      await registrarContract.deployed();
 
       expect(await wrldContract.owner()).to.equal(owner.address);
-      expect(await wnsContract.owner()).to.equal(owner.address);
+      expect(await registryContract.owner()).to.equal(owner.address);
+      expect(await registrarContract.owner()).to.equal(owner.address);
     });
   });
 
@@ -42,13 +48,13 @@ describe('World Name Service Contract', () => {
     it('Registers a WRLD name', async () => {
       const registerer = otherAddresses[0];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
 
-      const name = await wnsContract.getName('arkdev');
+      const name = await registryContract.getName('arkdev');
 
       expect(name.name).to.equal('arkdev');
       expect(name.controller).to.equal(registerer.address);
@@ -58,83 +64,83 @@ describe('World Name Service Contract', () => {
       await whitelistContract.mint(2, 5);
 
       // register as owner, allowing 2 char name
-      await wnsContract.registerWithPass([ 'tv' ]);
+      await registrarContract.registerWithPass([ 'tv' ]);
 
       // register with pass
       const registerer = otherAddresses[0];
-      await expect(wnsContract.connect(registerer).registerWithPass([ 'eth1' ], [ 1 ])).to.be.reverted;
+      await expect(registrarContract.connect(registerer).registerWithPass([ 'eth1' ], [ 1 ])).to.be.reverted;
 
       await whitelistContract.safeTransferFrom(owner.address, registerer.address, 2, 2, 0);
-      await expect(wnsContract.connect(registerer).registerWithPass([ 't' ])).to.be.reverted; // should not allow 1 or 2 char
-      await wnsContract.connect(registerer).registerWithPass([ 'eth1', 'testtt' ]);
+      await expect(registrarContract.connect(registerer).registerWithPass([ 't' ])).to.be.reverted; // should not allow 1 or 2 char
+      await registrarContract.connect(registerer).registerWithPass([ 'eth1', 'testtt' ]);
     });
 
     it('Registers multiple WRLD names', async () => {
       const registerer = otherAddresses[0];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 500000);
 
       const names = [ 'arktech', 'arktechs', 'wrldmind', 'devtest', 'yoloman' ];
       const years = [ 10, 10, 10, 15, 10 ];
 
-      await wnsContract.connect(registerer).register(names, years);
+      await registrarContract.connect(registerer).register(names, years);
 
       for (let i = 0; i < names.length; i++) {
-        const wrldName = await wnsContract.getName(names[i]);
+        const wrldName = await registryContract.getName(names[i]);
         expect(wrldName.name).to.equal(names[i]);
-        expect(await wnsContract.getNameExpiration(wrldName.name)).to.equal(wrldName.expiresAt);
-        expect(await wnsContract.getTokenName(i + 1)).to.equal(wrldName.name);
-        expect(await wnsContract.getNameTokenId(wrldName.name)).to.equal(i + 1);
+        expect(await registryContract.getNameExpiration(wrldName.name)).to.equal(wrldName.expiresAt);
+        expect(await registryContract.getTokenName(i + 1)).to.equal(wrldName.name);
+        expect(await registryContract.getNameTokenId(wrldName.name)).to.equal(i + 1);
       }
     });
 
     it('Registers WRLD name and extends registration', async () => {
       const registerer = otherAddresses[0];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
-      const initialExpiration = await wnsContract.getNameExpiration('arkdev');
-      await wnsContract.connect(registerer).extendRegistration([ 'arkdev' ], [ 5 ]);
-      expect((await wnsContract.getNameExpiration('arkdev') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
+      const initialExpiration = await registryContract.getNameExpiration('arkdev');
+      await registrarContract.connect(registerer).extendRegistration([ 'arkdev' ], [ 5 ]);
+      expect((await registryContract.getNameExpiration('arkdev') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
     });
 
     it('Registers WRLD name and allows a new registrant if expiration time has passed', async () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registererOne, 50000);
       await mintWRLDToAddressAndAllow(registererTwo, 50000);
 
-      await wnsContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
-      await expect(wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
+      await registrarContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
+      await expect(registrarContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
 
-      const tokenId = await wnsContract.getNameTokenId('arkdev') * 1;
+      const tokenId = await registryContract.getNameTokenId('arkdev') * 1;
 
       await ethers.provider.send('evm_mine', [ Date.now() / 1000 + (YEAR_SECONDS * 2) + 600 ]);
 
-      await wnsContract.connect(registererTwo).register([ 'arkdev', 'newark' ], [ 3, 1 ]);
-      await expect(wnsContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
+      await registrarContract.connect(registererTwo).register([ 'arkdev', 'newark' ], [ 3, 1 ]);
+      await expect(registrarContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
 
-      expect(await wnsContract.getNameTokenId('arkdev') * 1).to.equal(tokenId);
+      expect(await registryContract.getNameTokenId('arkdev') * 1).to.equal(tokenId);
     });
 
     it('Registers WRLD name using emojis', async () => {
       const registerer = otherAddresses[0];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
 
-      await wnsContract.connect(registerer).register([ '🔥🚀🌕🌕' ], [ 2 ]);
+      await registrarContract.connect(registerer).register([ '🔥🚀🌕🌕' ], [ 2 ]);
 
-      const name = await wnsContract.getName('🔥🚀🌕🌕');
+      const name = await registryContract.getName('🔥🚀🌕🌕');
 
       expect(name.name).to.equal('🔥🚀🌕🌕');
       expect(name.controller).to.equal(registerer.address);
@@ -143,24 +149,24 @@ describe('World Name Service Contract', () => {
     it('Fails to register with pass when no passes owned', async () => {
       const registerer = otherAddresses[0];
 
-      await expect(wnsContract.connect(registerer).registerWithPass([ 'testing' ])).to.be.reverted;
+      await expect(registrarContract.connect(registerer).registerWithPass([ 'testing' ])).to.be.reverted;
     });
 
     it('Fails to register when registration is not enabled', async () => {
       await mintWRLDToAddressAndAllow(owner, 5000);
 
-      await expect(wnsContract.register([ 'arkdev' ], [ 1 ])).to.be.reverted;
+      await expect(registrarContract.register([ 'arkdev' ], [ 1 ])).to.be.reverted;
     });
 
     it('Fails to register 1 or 2 character name if now enabled', async () => {
       const registerer = otherAddresses[0];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
       await mintWRLDToAddressAndAllow(registerer, 50000);
 
-      await expect(wnsContract.connect(registerer).register([ 'a' ], [ 1 ])).to.be.reverted;
-      await expect(wnsContract.connect(registerer).register([ 'aa' ], [ 1 ])).to.be.reverted;
-      await wnsContract.connect(registerer).register([ 'aaa' ], [ 1 ]);
+      await expect(registrarContract.connect(registerer).register([ 'a' ], [ 1 ])).to.be.reverted;
+      await expect(registrarContract.connect(registerer).register([ 'aa' ], [ 1 ])).to.be.reverted;
+      await registrarContract.connect(registerer).register([ 'aaa' ], [ 1 ]);
     });
 
 
@@ -168,13 +174,13 @@ describe('World Name Service Contract', () => {
       const registererOne = otherAddresses[0];
       const registererTwo = otherAddresses[1];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registererOne, 50000);
       await mintWRLDToAddressAndAllow(registererTwo, 50000);
 
-      await wnsContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
-      await expect(wnsContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
+      await registrarContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
+      await expect(registrarContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
     });
   });
 
@@ -184,52 +190,52 @@ describe('World Name Service Contract', () => {
       const controller = otherAddresses[1];
       const otherAddress = otherAddresses[2];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
 
-      expect(await wnsContract.getNameOwner('arkdev')).to.equal(registerer.address);
+      expect(await registryContract.getNameOwner('arkdev')).to.equal(registerer.address);
 
-      await wnsContract.connect(registerer).setController('arkdev', controller.address);
-      expect(await wnsContract.getNameController('arkdev')).to.equal(controller.address);
+      await registryContract.connect(registerer).setController('arkdev', controller.address);
+      expect(await registryContract.getNameController('arkdev')).to.equal(controller.address);
 
-      await wnsContract.connect(controller).setAddressRecord('arkdev', 'test', otherAddress.address, 3600);
-      const addressRecord = await wnsContract.getNameAddressRecord('arkdev', 'test');
-      const defaultAddressRecord = await wnsContract.getNameAddressRecord('arkdev', 'evm_default');
-      const addressRecords = await wnsContract.getNameAddressRecordsList('arkdev');
+      await registryContract.connect(controller).setAddressRecord('arkdev', 'test', otherAddress.address, 3600);
+      const addressRecord = await registryContract.getNameAddressRecord('arkdev', 'test');
+      const defaultAddressRecord = await registryContract.getNameAddressRecord('arkdev', 'evm_default');
+      const addressRecords = await registryContract.getNameAddressRecordsList('arkdev');
       expect(addressRecord.value).to.equal(otherAddress.address);
       expect(addressRecord.ttl).to.equal(3600);
       expect(defaultAddressRecord.value).to.equal(registerer.address);
       expect(addressRecords[0]).to.equal('evm_default');
       expect(addressRecords[1]).to.equal('test');
 
-      await wnsContract.connect(registerer).setStringRecord('arkdev', 'test1', 'something', 'A', 3600);
-      const stringRecord = await wnsContract.getNameStringRecord('arkdev', 'test1');
-      const stringRecords = await wnsContract.getNameStringRecordsList('arkdev');
+      await registryContract.connect(registerer).setStringRecord('arkdev', 'test1', 'something', 'A', 3600);
+      const stringRecord = await registryContract.getNameStringRecord('arkdev', 'test1');
+      const stringRecords = await registryContract.getNameStringRecordsList('arkdev');
       expect(stringRecord.value).to.equal('something');
       expect(stringRecord.typeOf).to.equal('A');
       expect(stringRecord.ttl).to.equal(3600);
       expect(stringRecords[0]).to.equal('test1');
 
-      await wnsContract.connect(controller).setUintRecord('arkdev', 'test2', 1234, 3600);
-      const uintRecord = await wnsContract.getNameUintRecord('arkdev', 'test2');
-      const uintRecords = await wnsContract.getNameUintRecordsList('arkdev');
+      await registryContract.connect(controller).setUintRecord('arkdev', 'test2', 1234, 3600);
+      const uintRecord = await registryContract.getNameUintRecord('arkdev', 'test2');
+      const uintRecords = await registryContract.getNameUintRecordsList('arkdev');
       expect(uintRecord.value).to.equal(1234);
       expect(uintRecord.ttl).to.equal(3600);
       expect(uintRecords[0]).to.equal('test2');
 
-      await wnsContract.connect(controller).setIntRecord('arkdev', 'test3', -1234, 3600);
-      const intRecord = await wnsContract.getNameIntRecord('arkdev', 'test3');
-      const intRecords = await wnsContract.getNameIntRecordsList('arkdev');
+      await registryContract.connect(controller).setIntRecord('arkdev', 'test3', -1234, 3600);
+      const intRecord = await registryContract.getNameIntRecord('arkdev', 'test3');
+      const intRecords = await registryContract.getNameIntRecordsList('arkdev');
       expect(intRecord.value).to.equal(-1234);
       expect(intRecord.ttl).to.equal(3600);
       expect(intRecords[0]).to.equal('test3');
 
-      await expect(wnsContract.connect(otherAddress).setAddressRecord('arkdev', 'test', otherAddress.address, 3600)).to.be.reverted;
-      await expect(wnsContract.connect(otherAddress).setStringRecord('arkdev', 'test1', 'new', 'A', 3600)).to.be.reverted;
-      await expect(wnsContract.connect(otherAddress).setUintRecord('arkdev', 'test2', 4567, 3600)).to.be.reverted;
-      await expect(wnsContract.connect(otherAddress).setIntRecord('arkdev', 'test3', -4567, 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setAddressRecord('arkdev', 'test', otherAddress.address, 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setStringRecord('arkdev', 'test1', 'new', 'A', 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setUintRecord('arkdev', 'test2', 4567, 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setIntRecord('arkdev', 'test3', -4567, 3600)).to.be.reverted;
     });
   });
 
@@ -238,26 +244,26 @@ describe('World Name Service Contract', () => {
       const registerer = otherAddresses[0];
       const entrySetter = otherAddresses[1];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
 
       await mintWRLDToAddressAndAllow(registerer, 5000);
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
 
-      await wnsContract.connect(entrySetter).setStringEntry('arkdev', 'class', 'dwarf');
-      expect(await wnsContract.getStringEntry(entrySetter.address, 'arkdev', 'class')).to.equal('dwarf');
-      expect(await wnsContract.getStringEntry(entrySetter.address, 'random', 'class')).to.equal(''); // never set
+      await registryContract.connect(entrySetter).setStringEntry('arkdev', 'class', 'dwarf');
+      expect(await registryContract.getStringEntry(entrySetter.address, 'arkdev', 'class')).to.equal('dwarf');
+      expect(await registryContract.getStringEntry(entrySetter.address, 'random', 'class')).to.equal(''); // never set
 
-      await wnsContract.connect(entrySetter).setAddressEntry('arkdev', 'manager', otherAddresses[3].address);
-      expect(await wnsContract.getAddressEntry(entrySetter.address, 'arkdev', 'manager')).to.equal(otherAddresses[3].address);
-      expect(await wnsContract.getAddressEntry(entrySetter.address, 'random', 'manager')).to.equal('0x0000000000000000000000000000000000000000'); // never set
+      await registryContract.connect(entrySetter).setAddressEntry('arkdev', 'manager', otherAddresses[3].address);
+      expect(await registryContract.getAddressEntry(entrySetter.address, 'arkdev', 'manager')).to.equal(otherAddresses[3].address);
+      expect(await registryContract.getAddressEntry(entrySetter.address, 'random', 'manager')).to.equal('0x0000000000000000000000000000000000000000'); // never set
 
-      await wnsContract.connect(entrySetter).setUintEntry('arkdev', 'level', 124);
-      expect(await wnsContract.getUintEntry(entrySetter.address, 'arkdev', 'level')).to.equal(124);
-      expect(await wnsContract.getUintEntry(entrySetter.address, 'random', 'level')).to.equal(0); // never set
+      await registryContract.connect(entrySetter).setUintEntry('arkdev', 'level', 124);
+      expect(await registryContract.getUintEntry(entrySetter.address, 'arkdev', 'level')).to.equal(124);
+      expect(await registryContract.getUintEntry(entrySetter.address, 'random', 'level')).to.equal(0); // never set
 
-      await wnsContract.connect(entrySetter).setIntEntry('arkdev', 'damage', -100);
-      expect(await wnsContract.getIntEntry(entrySetter.address, 'arkdev', 'damage')).to.equal(-100);
-      expect(await wnsContract.getIntEntry(entrySetter.address, 'random', 'damage')).to.equal(0); // never set
+      await registryContract.connect(entrySetter).setIntEntry('arkdev', 'damage', -100);
+      expect(await registryContract.getIntEntry(entrySetter.address, 'arkdev', 'damage')).to.equal(-100);
+      expect(await registryContract.getIntEntry(entrySetter.address, 'random', 'damage')).to.equal(0); // never set
     });
   });
 
@@ -272,10 +278,10 @@ describe('World Name Service Contract', () => {
         newPrice, // 5+ char
       ];
 
-      await wnsContract.setAnnualWrldPrices(newPrices);
+      await registrarContract.setAnnualWrldPrices(newPrices);
 
       for (let i = 0; i < newPrices.length; i++) {
-        expect(await wnsContract.annualWrldPrices(i)).to.equal(newPrices[i]);
+        expect(await registrarContract.annualWrldPrices(i)).to.equal(newPrices[i]);
       }
     });
   });
@@ -284,12 +290,12 @@ describe('World Name Service Contract', () => {
     it('Allows owner to withdraw', async () => {
       const registerer = otherAddresses[0];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
       await mintWRLDToAddressAndAllow(registerer, 5000);
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
 
       expect(await wrldContract.balanceOf(owner.address) * 1).to.equal(0);
-      await wnsContract.withdrawWrld(owner.address);
+      await registrarContract.withdrawWrld(owner.address);
       expect(await wrldContract.balanceOf(owner.address) / 1e18).to.equal(4000);
     });
 
@@ -297,22 +303,22 @@ describe('World Name Service Contract', () => {
       const registerer = otherAddresses[0];
       const withdrawer = otherAddresses[1];
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
       await mintWRLDToAddressAndAllow(registerer, 5000);
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
 
-      await expect(wnsContract.connect(withdrawer).withdrawWrld(withdrawer.address)).to.be.reverted;
-      await wnsContract.setApprovedWithdrawer(withdrawer.address);
+      await expect(registrarContract.connect(withdrawer).withdrawWrld(withdrawer.address)).to.be.reverted;
+      await registrarContract.setApprovedWithdrawer(withdrawer.address);
 
       expect(await wrldContract.balanceOf(owner.address) * 1).to.equal(0);
-      await wnsContract.connect(withdrawer).withdrawWrld(withdrawer.address);
+      await registrarContract.connect(withdrawer).withdrawWrld(withdrawer.address);
       expect(await wrldContract.balanceOf(withdrawer.address) / 1e18).to.equal(4000);
     });
 
     it('Fails to withdraw if not owner or approved', async () => {
       const withdrawer = otherAddresses[0];
 
-      await expect(wnsContract.connect(withdrawer).withdrawWrld(withdrawer.address)).to.be.reverted;
+      await expect(registrarContract.connect(withdrawer).withdrawWrld(withdrawer.address)).to.be.reverted;
     });
   });
 
@@ -323,12 +329,12 @@ describe('World Name Service Contract', () => {
       const NameMetadataFactory = await ethers.getContractFactory('WRLD_Name_Service_Metadata');
       const metadata = await NameMetadataFactory.deploy();
 
-      await wnsContract.enableRegistration();
+      await registrarContract.enableRegistration();
       await mintWRLDToAddressAndAllow(registerer, 5000);
-      await wnsContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
-      expect(await wnsContract.tokenURI(1)).to.equal('');
-      await wnsContract.setMetadataContract(metadata.address);
-      expect((await wnsContract.tokenURI(1)).includes('arkdev')).to.equal(true);
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
+      expect(await registryContract.tokenURI(1)).to.equal('');
+      await registryContract.setMetadataContract(metadata.address);
+      expect((await registryContract.tokenURI(1)).includes('arkdev')).to.equal(true);
     });
   });
 
@@ -340,6 +346,6 @@ describe('World Name Service Contract', () => {
     const bigNumberAmount = ethers.BigNumber.from(amount).mul(BigInt(1e18));
 
     await wrldContract.mint(toWallet.address, bigNumberAmount);
-    await wrldContract.connect(toWallet).approve(wnsContract.address, bigNumberAmount);
+    await wrldContract.connect(toWallet).approve(registrarContract.address, bigNumberAmount);
   }
 });

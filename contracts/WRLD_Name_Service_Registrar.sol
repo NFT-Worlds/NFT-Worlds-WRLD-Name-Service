@@ -74,7 +74,7 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
       sumPrice += _registrationYears[i] * getRegistrationPrice(_names[i]);
     }
 
-    registry.register(_names, _registrationYears);
+    registry.register(msg.sender, _names, _registrationYears);
 
     if (!_free) {
       wrld.transferFrom(msg.sender, address(this), sumPrice);

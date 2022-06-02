@@ -56,7 +56,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    * Registration *
    ****************/
 
-  function register(string[] calldata _names, uint16[] memory _registrationYears) external override isApprovedRegistrar {
+  function register(address _registerer, string[] calldata _names, uint16[] memory _registrationYears) external override isApprovedRegistrar {
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
     uint256 mintCount = 0;
@@ -77,13 +77,13 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
         wrldNames[existingTokenId].expiresAt = expiresAt;
 
-        _safeTransferFromForced(getNameOwner(name), msg.sender, existingTokenId, "");
+        _safeTransferFromForced(getNameOwner(name), _registerer, existingTokenId, "");
       } else {
         uint256 newTokenId = tokenStartId + mintCount;
 
         wrldNames[newTokenId] = WRLDName({
           name: name,
-          controller: msg.sender,
+          controller: _registerer,
           expiresAt: expiresAt
         });
 
@@ -96,7 +96,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
 
     if (mintCount > 0) {
-      _safeMint(msg.sender, mintCount);
+      _safeMint(_registerer, mintCount);
     }
   }
 
@@ -215,7 +215,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     emit ResolverStringRecordUpdated(_name, _name, _record, _value, _typeOf, _ttl, address(resolver));
   }
 
-  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) public isOwnerOrController(_name) {
+  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) external isOwnerOrController(_name) {
     resolver.setAddressRecord(_name, _record, _value, _ttl);
 
     emit ResolverAddressRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
@@ -303,7 +303,8 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
       wrldName.controller = to;
 
-      setAddressRecord(wrldName.name, "evm_default", to, 3600);
+      resolver.setAddressRecord(wrldName.name, "evm_default", to, 3600);
+      emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
 
       super._afterTokenTransfers(from, to, startTokenId, quantity);
     }
@@ -314,7 +315,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    *************/
 
   modifier isApprovedRegistrar() {
-    require(msg.sender == approvedRegistrar);
+    require(msg.sender == approvedRegistrar, "msg sender is not registrar");
     _;
   }
 
