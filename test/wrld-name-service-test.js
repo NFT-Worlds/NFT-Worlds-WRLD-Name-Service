@@ -182,6 +182,21 @@ describe('World Name Service Contract', () => {
       await registrarContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
       await expect(registrarContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
     });
+
+    it('Fails to register directly through the registry', async () => {
+      await expect(registryContract.register(owner.address, [ 'testing' ], [ 123 ])).to.be.reverted;
+    });
+
+    it('Fails to extend registration directly through the registry', async () => {
+      const registerer = otherAddresses[0];
+
+      await registrarContract.enableRegistration();
+      await mintWRLDToAddressAndAllow(registerer, 50000);
+
+      await registrarContract.connect(registerer).register([ 'aaa' ], [ 1 ]);
+
+      await expect(registryContract.extendRegistration([ 'aaa' ], [ 2 ])).to.be.reverted;
+    });
   });
 
   describe('Name Management', () => {
