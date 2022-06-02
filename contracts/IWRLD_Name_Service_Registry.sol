@@ -3,7 +3,10 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-interface IWRLD_Name_Service is IERC165 {
+interface IWRLD_Name_Service_Registry is IERC165 {
+  function register(string[] calldata _names, uint16[] memory _registrationYears) external;
+  function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external;
+
   function getNameTokenId(string calldata _name) external view returns (uint256);
 
   event NameRegistered(string indexed idxName, string name, uint16 registrationYears);
