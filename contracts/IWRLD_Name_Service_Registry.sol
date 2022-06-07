@@ -5,21 +5,23 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface IWRLD_Name_Service_Registry is IERC165 {
   function register(address _registerer, string[] calldata _names, uint16[] memory _registrationYears) external;
-  function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external;
+  function extendRegistration(uint256[] calldata _tokenIds, uint16[] calldata _additionalYears) external;
 
-  function getNameTokenId(string calldata _name) external view returns (uint256);
+  function nameTokenId(string memory name) external pure returns (uint256);
+  function nameExists(string calldata _name) external view returns (bool);
+  function getTokenName(uint256 _tokenId) external view returns (string memory);
 
-  event NameRegistered(string indexed idxName, string name, uint16 registrationYears);
-  event NameRegistrationExtended(string indexed idxName, string name, uint16 additionalYears);
-  event NameControllerUpdated(string indexed idxName, string name, address controller);
+  event NameRegistered(uint256 indexed tokenId, string indexed name, uint16 registrationYears);
+  event NameRegistrationExtended(uint256 indexed tokenId, uint16 additionalYears);
+  // event NameControllerUpdated(uint256 indexed tokenId, address controller);
 
-  event ResolverStringRecordUpdated(string indexed idxName, string name, string record, string value, string typeOf, uint256 ttl, address resolver);
-  event ResolverAddressRecordUpdated(string indexed idxName, string name, string record, address value, uint256 ttl, address resolver);
-  event ResolverUintRecordUpdated(string indexed idxName, string name, string record, uint256 value, uint256 ttl, address resolver);
-  event ResolverIntRecordUpdated(string indexed idxName, string name, string record, int256 value, uint256 ttl, address resolver);
+  // event ResolverStringRecordUpdated(string indexed idxName, string name, string record, string value, string typeOf, uint256 ttl, address resolver);
+  // event ResolverAddressRecordUpdated(string indexed idxName, string name, string record, address value, uint256 ttl, address resolver);
+  // event ResolverUintRecordUpdated(string indexed idxName, string name, string record, uint256 value, uint256 ttl, address resolver);
+  // event ResolverIntRecordUpdated(string indexed idxName, string name, string record, int256 value, uint256 ttl, address resolver);
 
-  event ResolverStringEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, string value);
-  event ResolverAddressEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, address value);
-  event ResolverUintEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, uint256 value);
-  event ResolverIntEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, int256 value);
+  // event ResolverStringEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, string value);
+  // event ResolverAddressEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, address value);
+  // event ResolverUintEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, uint256 value);
+  // event ResolverIntEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, int256 value);
 }

@@ -20,7 +20,7 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
   INFTW_Whitelist immutable whitelist;
   IWRLD_Name_Service_Registry immutable registry;
 
-  uint256 private constant YEAR_SECONDS = 31536000;
+  uint256 private constant YEAR_SECONDS = 31557600;
   uint256 private constant PREREGISTRATION_PASS_TYPE_ID = 2;
 
   bool public registrationEnabled = false;
@@ -81,8 +81,9 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
     }
   }
 
-  function getRegistrationPrice(string calldata _name) internal view returns (uint price) {
-    uint len = _name.strlen();
+  function getRegistrationPrice(string memory _name) internal view returns (uint price) {
+    string memory canonicalName = _name.UTS46Normalize();
+    uint len = canonicalName.strlen();
     if (len > 0 && len <= 5) {
       price = annualWrldPrices[len-1];
     } else if (len > 5) {
@@ -96,16 +97,16 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
    * Extension *
    *************/
 
-  function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external nonReentrant {
-    require(_names.length == _additionalYears.length, "Arg size mismatched");
+  function extendRegistration(uint256[] calldata _tokenIds, uint16[] calldata _additionalYears) external nonReentrant {
+    require(_tokenIds.length == _additionalYears.length, "Arg size mismatched");
 
     uint256 sumPrice = 0;
 
-    for (uint256 i = 0; i < _names.length; i++) {
-      sumPrice += _additionalYears[i] * getRegistrationPrice(_names[i]);
+    for (uint256 i = 0; i < _tokenIds.length; i++) {
+      sumPrice += _additionalYears[i] * getRegistrationPrice(registry.getTokenName(_tokenIds[i]));
     }
 
-    registry.extendRegistration(_names, _additionalYears);
+    registry.extendRegistration(_tokenIds, _additionalYears);
 
     wrld.transferFrom(msg.sender, address(this), sumPrice);
   }
