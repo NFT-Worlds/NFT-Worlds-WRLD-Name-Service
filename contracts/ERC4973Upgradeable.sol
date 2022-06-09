@@ -2,12 +2,11 @@
 pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
-import "./IERC4973.sol";
+import "./IERC4973Upgradeable.sol";
 
-abstract contract ERC4973Upgradeable is Initializable, ERC165, IERC721Metadata, IERC4973 {
+abstract contract ERC4973Upgradeable is Initializable, ERC165Upgradeable, IERC4973Upgradeable {
   string private _name;
   string private _symbol;
 
@@ -23,22 +22,21 @@ abstract contract ERC4973Upgradeable is Initializable, ERC165, IERC721Metadata, 
     _symbol = symbol_;
   }
 
-  function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+  function supportsInterface(bytes4 interfaceId) public view override(ERC165Upgradeable, IERC165Upgradeable) returns (bool) {
     return
-      interfaceId == type(IERC721Metadata).interfaceId ||
-      interfaceId == type(IERC4973).interfaceId ||
+      interfaceId == type(IERC4973Upgradeable).interfaceId ||
       super.supportsInterface(interfaceId);
   }
 
-  function name() public view virtual override returns (string memory) {
+  function name() public view virtual returns (string memory) {
     return _name;
   }
 
-  function symbol() public view virtual override returns (string memory) {
+  function symbol() public view virtual returns (string memory) {
     return _symbol;
   }
 
-  function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+  function tokenURI(uint256 tokenId) public view virtual returns (string memory) {
     require(_exists(tokenId), "tokenURI: token doesn't exist");
     return _tokenURIs[tokenId];
   }
@@ -47,7 +45,7 @@ abstract contract ERC4973Upgradeable is Initializable, ERC165, IERC721Metadata, 
     return _owners[tokenId] != address(0);
   }
 
-  function ownerOf(uint256 tokenId) public view virtual returns (address) {
+  function ownerOf(uint256 tokenId) public view virtual override returns (address) {
     address owner = _owners[tokenId];
     require(owner != address(0), "ownerOf: token doesn't exist");
     return owner;

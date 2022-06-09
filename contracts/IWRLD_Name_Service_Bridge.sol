@@ -11,5 +11,6 @@ interface IWRLD_Name_Service_Bridge is IERC165 {
   function controllerOf(uint256 tokenId) external view returns (address);
   function expiryOf(uint256 tokenId) external view returns (uint96);
   function nameOf(uint256 tokenId) external view returns (string memory);
+  function isAuthd(uint256 tokenId, address user) external view returns (bool);
 
 }

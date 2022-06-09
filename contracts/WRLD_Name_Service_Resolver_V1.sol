@@ -2,155 +2,69 @@
 pragma solidity ^0.8.4;
 
 import "./IWRLD_Name_Service_Resolver.sol";
-import "./IWRLD_Name_Service_Registry.sol";
+import "./IWRLD_Name_Service_Bridge.sol";
+import "./IWRLD_Name_Service_Storage.sol";
 
+// Resolvers can be updated without needing to migrate storage
+// Multiple resolvers can be deployed for each storage
 contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
-  IWRLD_Name_Service_Registry nameServiceRegistry;
+  IWRLD_Name_Service_Bridge nameServiceBridge;
+  IWRLD_Name_Service_Storage nameServiceStorage;
 
-  mapping(uint256 => mapping(string => StringRecord)) private wrldNameStringRecords;
-  mapping(uint256 => string[]) private wrldNameStringRecordsList;
 
-  mapping(uint256 => mapping(string => AddressRecord)) private wrldNameAddressRecords;
-  mapping(uint256 => string[]) private wrldNameAddressRecordsList;
-
-  mapping(uint256 => mapping(string => UintRecord)) private wrldNameUintRecords;
-  mapping(uint256 => string[]) private wrldNameUintRecordsList;
-
-  mapping(uint256 => mapping(string => IntRecord)) private wrldNameIntRecords;
-  mapping(uint256 => string[]) private wrldNameIntRecordsList;
-
-  mapping(bytes32 => string) private wrldNameStringEntries;
-  mapping(bytes32 => address) private wrldNameAddressEntries;
-  mapping(bytes32 => uint) private wrldNameUintEntries;
-  mapping(bytes32 => int) private wrldNameIntEntries;
-
-  constructor(address _nameServiceRegistry) {
-    nameServiceRegistry = IWRLD_Name_Service_Registry(_nameServiceRegistry);
+  constructor(address _nameServiceBridge, address _nameServiceStorage) {
+    nameServiceBridge = IWRLD_Name_Service_Bridge(_nameServiceBridge);
+    nameServiceStorage = IWRLD_Name_Service_Storage(_nameServiceStorage);
   }
 
   /******************
    * Record Setters *
    ******************/
+   // To delete records simply set them to empty
+   // Enumeration needs to be implemented off-chain since there's no efficient CRUD implementation for string type
 
-  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external override onlyNameServiceRegistry {
-    wrldNameStringRecords[_getNameTokenId(_name)][_record] = StringRecord({
-      value: _value,
-      typeOf: _typeOf,
-      ttl: _ttl
-    });
-
-    wrldNameStringRecordsList[_getNameTokenId(_name)].push(_record);
-
-    emit StringRecordUpdated(_name, _name, _record, _value, _typeOf, _ttl);
+  function setStringRecord(uint256 tokenId, string calldata _record, string calldata _value, string calldata _typeOf, uint32 _ttl) external override onlyAuthd(tokenId) {
+    nameServiceStorage.setStringRecord(tokenId, _record, _value, _typeOf, _ttl);
   }
 
-  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) external override onlyNameServiceRegistry {
-    wrldNameAddressRecords[_getNameTokenId(_name)][_record] = AddressRecord({
-      value: _value,
-      ttl: _ttl
-    });
-
-    wrldNameAddressRecordsList[_getNameTokenId(_name)].push(_record);
-
-    emit AddressRecordUpdated(_name, _name, _record, _value, _ttl);
+  function setAddressRecord(uint256 tokenId, string calldata _record, address _value, uint32 _ttl) external override onlyAuthd(tokenId) {
+    nameServiceStorage.setAddressRecord(tokenId, _record, _value, _ttl);
   }
 
-  function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external override onlyNameServiceRegistry {
-    wrldNameUintRecords[_getNameTokenId(_name)][_record] = UintRecord({
-      value: _value,
-      ttl: _ttl
-    });
-
-    wrldNameUintRecordsList[_getNameTokenId(_name)].push(_record);
-
-    emit UintRecordUpdated(_name, _name, _record, _value, _ttl);
+  function setUintRecord(uint256 tokenId, string calldata _record, uint256 _value, uint32 _ttl) external override onlyAuthd(tokenId) {
+    nameServiceStorage.setUintRecord(tokenId, _record, _value, _ttl);
   }
 
-  function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external override onlyNameServiceRegistry {
-    wrldNameIntRecords[_getNameTokenId(_name)][_record] = IntRecord({
-      value: _value,
-      ttl: _ttl
-    });
+  function setIntRecord(uint256 tokenId, string calldata _record, int256 _value, uint32 _ttl) external override onlyAuthd(tokenId) {
+    nameServiceStorage.setIntRecord(tokenId, _record, _value, _ttl);
+  }
 
-    wrldNameIntRecordsList[_getNameTokenId(_name)].push(_record);
-
-    emit IntRecordUpdated(_name, _name, _record, _value, _ttl);
+  function setWalletRecord(uint256 tokenId, uint256 _record, string calldata _value) external override onlyAuthd(tokenId) {
+    nameServiceStorage.setWalletRecord(tokenId, _record, _value);
   }
 
   /******************
    * Record Getters *
    ******************/
 
-  function getNameStringRecord(string calldata _name, string calldata _record) external view override returns (StringRecord memory) {
-    return wrldNameStringRecords[_getNameTokenId(_name)][_record];
+  function getStringRecord(uint256 tokenId, string calldata _record) external view override returns (StringRecord memory) {
+    return nameServiceStorage.getStringRecord(tokenId, _record);
   }
 
-  function getNameStringRecordsList(string calldata _name) external view override returns (string[] memory) {
-    return wrldNameStringRecordsList[_getNameTokenId(_name)];
+  function getAddressRecord(uint256 tokenId, string calldata _record) external view override returns (AddressRecord memory) {
+    return nameServiceStorage.getAddressRecord(tokenId, _record);
   }
 
-  function getNameAddressRecord(string calldata _name, string calldata _record) external view override returns (AddressRecord memory) {
-    return wrldNameAddressRecords[_getNameTokenId(_name)][_record];
+  function getUintRecord(uint256 tokenId, string calldata _record) external view override returns (UintRecord memory) {
+    return nameServiceStorage.getUintRecord(tokenId, _record);
   }
 
-  function getNameAddressRecordsList(string calldata _name) external view override returns (string[] memory) {
-    return wrldNameAddressRecordsList[_getNameTokenId(_name)];
+  function getIntRecord(uint256 tokenId, string calldata _record) external view override returns (IntRecord memory) {
+    return nameServiceStorage.getIntRecord(tokenId, _record);
   }
 
-  function getNameUintRecord(string calldata _name, string calldata _record) external view override returns (UintRecord memory) {
-    return wrldNameUintRecords[_getNameTokenId(_name)][_record];
-  }
-
-  function getNameUintRecordsList(string calldata _name) external view override returns (string[] memory) {
-    return wrldNameUintRecordsList[_getNameTokenId(_name)];
-  }
-
-  function getNameIntRecord(string calldata _name, string calldata _record) external view override returns (IntRecord memory) {
-    return wrldNameIntRecords[_getNameTokenId(_name)][_record];
-  }
-
-  function getNameIntRecordsList(string calldata _name) external view override returns (string[] memory) {
-    return wrldNameIntRecordsList[_getNameTokenId(_name)];
-  }
-
-  /*****************
-   * Entry Setters *
-   *****************/
-
-  function setStringEntry(address _setter, string calldata _name, string calldata _entry, string calldata _value) external override onlyNameServiceRegistry {
-    wrldNameStringEntries[_getEntryHash(_setter, _name, _entry)] = _value;
-  }
-
-  function setAddressEntry(address _setter, string calldata _name, string calldata _entry, address _value) external override onlyNameServiceRegistry {
-    wrldNameAddressEntries[_getEntryHash(_setter, _name, _entry)] = _value;
-  }
-
-  function setUintEntry(address _setter, string calldata _name, string calldata _entry, uint256 _value) external override onlyNameServiceRegistry {
-    wrldNameUintEntries[_getEntryHash(_setter, _name, _entry)] = _value;
-  }
-
-  function setIntEntry(address _setter, string calldata _name, string calldata _entry, int256 _value) external override onlyNameServiceRegistry {
-    wrldNameIntEntries[_getEntryHash(_setter, _name, _entry)] = _value;
-  }
-
-  /*****************
-   * Entry Getters *
-   *****************/
-
-  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (string memory) {
-    return wrldNameStringEntries[_getEntryHash(_setter, _name, _entry)];
-  }
-
-  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (address) {
-    return wrldNameAddressEntries[_getEntryHash(_setter, _name, _entry)];
-  }
-
-  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (uint256) {
-    return wrldNameUintEntries[_getEntryHash(_setter, _name, _entry)];
-  }
-
-  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external view override returns (int256) {
-    return wrldNameIntEntries[_getEntryHash(_setter, _name, _entry)];
+  function getWalletRecord(uint256 tokenId, uint256 _record) external view override returns (string memory) {
+    return nameServiceStorage.getWalletRecord(tokenId, _record);
   }
 
   /**********
@@ -161,24 +75,12 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
     return interfaceId == type(IWRLD_Name_Service_Resolver).interfaceId;
   }
 
-  /***********
-   * Helpers *
-   ***********/
-
-  function _getNameTokenId(string memory _name) private view returns (uint256) {
-    return nameServiceRegistry.getNameTokenId(_name);
-  }
-
-  function _getEntryHash(address _setter, string memory _name, string memory _entry) private pure returns (bytes32) {
-    return keccak256(abi.encode(_setter, _name, _entry));
-  }
-
   /*************
    * Modifiers *
    *************/
 
-  modifier onlyNameServiceRegistry() {
-    require(msg.sender == address(nameServiceRegistry), "Sender is not name service.");
+  modifier onlyAuthd(uint256 tokenId) {
+    require(nameServiceBridge.isAuthd(tokenId, msg.sender), "Sender is not authorized.");
     _;
   }
 }

@@ -4,9 +4,9 @@ pragma solidity ^0.8.6;
 /// @title Account-bound tokens
 /// @dev See https://eips.ethereum.org/EIPS/eip-4973
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 
-interface IERC4973 is IERC165  {
+interface IERC4973Upgradeable is IERC165Upgradeable  {
   /// @dev This emits when a new token is created and bound to an account by
   /// any mechanism.
   /// Note: For a reliable `_from` parameter, retrieve the transaction's

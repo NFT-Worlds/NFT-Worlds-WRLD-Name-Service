@@ -9,7 +9,7 @@ import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseChildTunnel.sol";
 import "./IWRLD_Name_Service_Bridge.sol";
 import "./StringUtils.sol";
 
-contract WRLD_Name_Service_Bridge is IWRLD_Name_Service_Bridge, Ownable, FxBaseChildTunnel {
+contract WRLD_Name_Service_Bridge is Ownable, FxBaseChildTunnel, IWRLD_Name_Service_Bridge {
   using StringUtils for *;
   
   struct WRLDName {
@@ -21,16 +21,14 @@ contract WRLD_Name_Service_Bridge is IWRLD_Name_Service_Bridge, Ownable, FxBaseC
 
   mapping(uint256 => WRLDName) public wrldNames;
 
-  // Polygon fx bridge
+  constructor(address _fxChild) FxBaseChildTunnel(_fxChild) {}
   
-  function setFxRootTunnel(address _fxRootTunnel) external override onlyOwner {
-    fxRootTunnel = _fxRootTunnel;
-  }
+  // Polygon fx bridge
 
-  function _processMessageFromRoot(uint256 , address sender, bytes memory data) internal override validateSender(sender) {
-    uint256 tokenId = uint256(data[0:31]);
-    uint96 expiresAt = uint96(data[32:43]);
-    address registerer = address(data[44:63]);
+  function _processMessageFromRoot(uint256 , address sender, bytes calldata data) internal override validateSender(sender) {
+    uint256 tokenId = uint256(bytes32(data[0:31]));
+    uint96 expiresAt = uint96(uint256(bytes32(data[32:43])));
+    address registerer = address(uint160(uint256(bytes32(data[44:63]))));
 	  wrldNames[tokenId] = WRLDName(registerer, address(0), expiresAt, "");
     emit NameBridged(tokenId, registerer, expiresAt);
   }
@@ -53,25 +51,32 @@ contract WRLD_Name_Service_Bridge is IWRLD_Name_Service_Bridge, Ownable, FxBaseC
     return uint256(uint160(uint256(keccak256(bytes(name)))));
   }
 
-  function registererOf(uint256 tokenId) external view returns (address) {
+  function registererOf(uint256 tokenId) external view override returns (address) {
     return wrldNames[tokenId].registerer;
   }
 
-  function controllerOf(uint256 tokenId) external view returns (address) {
+  function controllerOf(uint256 tokenId) external view override returns (address) {
     return wrldNames[tokenId].controller;
   }
 
-  function expiryOf(uint256 tokenId) external view returns (uint96) {
+  function expiryOf(uint256 tokenId) external view override returns (uint96) {
     return wrldNames[tokenId].expiresAt;
   }
 
-  function nameOf(uint256 tokenId) external view returns (string memory) {
+  function nameOf(uint256 tokenId) external view override returns (string memory) {
     return wrldNames[tokenId].name;
   }
 
-  function isAuthd(uint256 tokenId, address user) external view returns (bool)  {
+  function isAuthd(uint256 tokenId, address user) external view override returns (bool)  {
     return (user == wrldNames[tokenId].registerer || user == wrldNames[tokenId].controller);
   }
 
+  /**********
+   * ERC165 *
+   **********/
+
+  function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+    return interfaceId == type(IWRLD_Name_Service_Bridge).interfaceId;
+  }
 
 }

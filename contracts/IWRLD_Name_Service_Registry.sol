@@ -15,10 +15,6 @@ interface IWRLD_Name_Service_Registry is IERC165 {
   event NameRegistrationExtended(uint256 indexed tokenId, uint16 additionalYears);
   // event NameControllerUpdated(uint256 indexed tokenId, address controller);
 
-  // event ResolverStringRecordUpdated(string indexed idxName, string name, string record, string value, string typeOf, uint256 ttl, address resolver);
-  // event ResolverAddressRecordUpdated(string indexed idxName, string name, string record, address value, uint256 ttl, address resolver);
-  // event ResolverUintRecordUpdated(string indexed idxName, string name, string record, uint256 value, uint256 ttl, address resolver);
-  // event ResolverIntRecordUpdated(string indexed idxName, string name, string record, int256 value, uint256 ttl, address resolver);
 
   // event ResolverStringEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, string value);
   // event ResolverAddressEntryUpdated(address indexed setter, string indexed idxName, string indexed idxEntry, string name, string entry, address value);

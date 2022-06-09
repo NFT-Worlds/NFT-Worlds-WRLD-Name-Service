@@ -140,4 +140,5 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
 
     wrld.transfer(toAddress, wrld.balanceOf(address(this)));
   }
+
 }
