@@ -28,7 +28,7 @@ describe('World Name Service Contract', () => {
     resolverContract = await WRLDNameServiceResolverFactory.deploy(registryContract.address);
 
     await registryContract.setResolverContract(resolverContract.address);
-    await registryContract.setApprovedRegistrar(registrarContract.address);
+    await registryContract.setApprovedRegistrar(registrarContract.address, true);
     await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', registrarContract.address);
   });
 

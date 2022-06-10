@@ -31,7 +31,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
   mapping(string => uint256) private nameTokenId;
 
   address private approvedWithdrawer;
-  address private approvedRegistrar;
+  mapping(address => bool) private approvedRegistrars;
 
   struct WRLDName {
     string name;
@@ -315,8 +315,8 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     approvedWithdrawer = _approvedWithdrawer;
   }
 
-  function setApprovedRegistrar(address _approvedRegistrar) external onlyOwner {
-    approvedRegistrar = _approvedRegistrar;
+  function setApprovedRegistrar(address _approvedRegistrar, bool _approved) external onlyOwner {
+    approvedRegistrars[_approvedRegistrar] = _approved;
   }
 
   function setMetadataContract(address _metadata) external onlyOwner {
@@ -377,7 +377,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    *************/
 
   modifier isApprovedRegistrar() {
-    require(msg.sender == approvedRegistrar, "msg sender is not registrar");
+    require(approvedRegistrars[msg.sender], "msg sender is not registrar");
     _;
   }
 
