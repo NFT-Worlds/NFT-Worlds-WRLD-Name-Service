@@ -347,7 +347,6 @@ describe('World Name Service Contract', () => {
       await registrarContract.enableRegistration();
       await mintWRLDToAddressAndAllow(registerer, 5000);
       await registrarContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
-      expect(await registryContract.tokenURI(1)).to.equal('');
       await registryContract.setMetadataContract(metadata.address);
       expect((await registryContract.tokenURI(1)).includes('arkdev')).to.equal(true);
     });
