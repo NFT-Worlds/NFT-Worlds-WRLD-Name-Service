@@ -221,6 +221,10 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     wrldNames[nameTokenId[_name]].controller = _controller;
 
     emit NameControllerUpdated(_name, _name, _controller);
+
+    if (hasBridge()) {
+      bridge.setController(_name, _controller);
+    }
   }
 
   function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external isOwnerOrController(_name) {
