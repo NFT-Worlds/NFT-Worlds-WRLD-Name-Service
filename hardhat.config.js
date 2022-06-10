@@ -22,7 +22,6 @@ module.exports = {
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
-    //mainnet: { url: 'https://eth-mainnet.alchemyapi.io/v2/BJKzGRUBi_0Gc37k55IDF0NIyEOExYsd' }
   },
   gasReporter: {
     currency: 'USD',
@@ -31,11 +30,11 @@ module.exports = {
   abiExporter: {
     path: './abi',
     clear: true,
-    flat: true,
+    flat: false,
     pretty: false,
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: '',
   },
   mocha: {
     timeout: 60 * 60 * 1000,
