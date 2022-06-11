@@ -4,13 +4,14 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseRootTunnel.sol";
 
 import "./IWRLD_Name_Service_Metadata.sol";
 import "./IWRLD_Name_Service_Registry.sol";
+import "./IWRLD_Name_Service_MasterBridge.sol";
+
 import "./StringUtils.sol";
 
-contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBaseRootTunnel, Ownable, ReentrancyGuard {
+contract WRLD_Name_Service_Registry is Ownable, ERC721, IWRLD_Name_Service_Registry, ReentrancyGuard {
   using StringUtils for *;
 
   /**
@@ -19,6 +20,7 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBa
    * */
 
   IWRLD_Name_Service_Metadata metadata;
+  IWRLD_Name_Service_MasterBridge masterBridge;
   //IWRLD_Name_Service_Resolver resolver;
 
   uint256 private constant YEAR_SECONDS = 31557600;  // 365.25 days
@@ -30,14 +32,12 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBa
 
   struct WRLDName {
     string name;
-    //address controller;
+    address controller;
     uint96 expiresAt;
   }
 
-  // Polygon fx bridge https://docs.polygon.technology/docs/develop/l1-l2-communication/state-transfer#pre-requisite
-  constructor(address _checkpointManager, address _fxRoot)
+  constructor()
     ERC721("WRLD Name Service", "WNS")
-    FxBaseRootTunnel(_checkpointManager, _fxRoot)
     {}
 
   /************
@@ -68,10 +68,10 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBa
         _burn(tokenId);
       } 
 
-      wrldNames[tokenId] = WRLDName(name, expiresAt);
+      wrldNames[tokenId] = WRLDName(name, address(0), expiresAt);
       _safeMint(_registerer, tokenId);
 
-      _sendMessageToChild(abi.encodePacked(tokenId, expiresAt, _registerer)); // (tokenId, expiration, owner)
+      masterBridge.sendMessageToChildren(abi.encodePacked(tokenId, expiresAt, _registerer, address(0), name)); // (tokenId, expiration, owner, controller, name)
       emit NameRegistered(tokenId, name, _registrationYears[i]);
       
     }
@@ -91,9 +91,16 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBa
       WRLDName storage wrldName = wrldNames[_tokenIds[i]];
       wrldName.expiresAt = wrldName.expiresAt + uint96(YEAR_SECONDS * _additionalYears[i]);
 
-      _sendMessageToChild(abi.encodePacked(_tokenIds[i], wrldName.expiresAt, ownerOf(_tokenIds[i])));
+      masterBridge.sendMessageToChildren(abi.encodePacked(_tokenIds[i], wrldName.expiresAt, ownerOf(_tokenIds[i])));
       emit NameRegistrationExtended(_tokenIds[i], _additionalYears[i]);
     }
+  }
+
+
+  function setController(uint256 tokenId, address controller) external {
+    require(msg.sender == ownerOf(tokenId), "Access denied");
+    wrldNames[tokenId].controller = controller;
+    masterBridge.sendMessageToChildren(abi.encodePacked(tokenId, wrldNames[tokenId].expiresAt, msg.sender, controller));
   }
 
   /***********
@@ -124,6 +131,10 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBa
     metadata = metadataContract;
   }
 
+  function setMasterBridge(IWRLD_Name_Service_MasterBridge _masterBridge) external onlyOwner {
+    masterBridge = _masterBridge;
+  }
+
 
   /*************
    * Views *
@@ -148,11 +159,10 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, FxBa
 
    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
      require(wrldNames[tokenId].expiresAt > block.timestamp || to == address(0), "registration expired");
-     _sendMessageToChild(abi.encodePacked(tokenId, wrldNames[tokenId].expiresAt, to));
+     masterBridge.sendMessageToChildren(abi.encodePacked(tokenId, wrldNames[tokenId].expiresAt, to));
      super._beforeTokenTransfer(from, to, tokenId);
    }
 
-   function _processMessageFromChild(bytes memory message) virtual internal override{}
 
   /**********
    * ERC165 *
