@@ -81,7 +81,7 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
     }
   }
 
-  function getRegistrationPrice(string calldata _name) internal view returns (uint price) {
+  function getRegistrationPrice(string calldata _name) public view returns (uint price) {
     uint len = _name.strlen();
     if (len > 0 && len <= 5) {
       price = annualWrldPrices[len-1];
