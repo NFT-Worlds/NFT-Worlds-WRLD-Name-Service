@@ -35,13 +35,6 @@ contract WRLD_Name_Service_Metadata is IWRLD_Name_Service_Metadata {
         return string(abi.encodePacked(Strings.toString(year), "-" ,Strings.toString(month), "-", Strings.toString(day)));
     }
 
-    function getName(string calldata _name) internal pure returns (string memory) {
-        if (bytes(_name).length > 15) {
-            return string(abi.encodePacked(string(_name[0:7]), "...", string(_name[bytes(_name).length-5:])));
-        }
-        return _name;
-    }
-
     function getMetadata(string calldata _name, uint256 _expiresAt) public view override returns (string memory) {
         string memory image = getImage(_name, _expiresAt);
 
@@ -72,7 +65,6 @@ contract WRLD_Name_Service_Metadata is IWRLD_Name_Service_Metadata {
         if (_name.strlen() == bytes(_name).length) {
             backgroundColor = "url(#paint0_linear_17_2)";
             borderColor = "";
-
         }
         if (block.timestamp > _expiresAt) {
             textColor = "#FF0000";
@@ -80,11 +72,11 @@ contract WRLD_Name_Service_Metadata is IWRLD_Name_Service_Metadata {
             textColor = "#FF9933";
         }
         return string(abi.encodePacked(
-            "<svg width='1500' height='1500' viewBox='0 0 1500 1500' fill='none' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><g clip-path='url(#clip0_17_2)'><rect id='rectBg' width='1500' height='1500' fill='",
+            "<svg width='1500' height='1500' viewBox='0 0 1500 1500' fill='none' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><g clip-path='url(#clip0_17_2)'><rect width='1500' height='1500' fill='",
             backgroundColor,
-            "'/><g opacity='0.6'><use xlink:href='#gframe' class='use-gframe' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.9;transform:scale(1.5,1.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.8;transform:scale(2,2);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.7;transform:scale(2.5,2.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.6;transform:scale(3,3);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.5;transform:scale(3.5,3.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.4;transform:scale(4,4);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.3;transform:scale(4.5,4.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.2;transform:scale(5,5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(5.5,5.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(6,6);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(6.5,6.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(7,7);' /></g><text id='domainTextWrap1' transform='translate(200 1066)' fill='white' xml:space='preserve' style='white-space: pre;' font-family='Maison Neue' font-size='140' font-weight='bold' letter-spacing='0em'><tspan id='domainText1' x='0' y='118.92' >",
-            getName(_name),
-            "</tspan></text><text id='domainTextWrap2' transform='translate(200 866)' fill='white' xml:space='preserve' style='white-space: pre;' font-family='Maison Neue' font-size='140' font-weight='bold' letter-spacing='0em'><tspan id='domainText2' x='0' y='138.92' ></tspan></text><text id='textColor' transform='translate(900 1100)' fill='",
+            "'/><g opacity='0.6'><use xlink:href='#gframe' class='use-gframe' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.9;transform:scale(1.5,1.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.8;transform:scale(2,2);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.7;transform:scale(2.5,2.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.6;transform:scale(3,3);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.5;transform:scale(3.5,3.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.4;transform:scale(4,4);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.3;transform:scale(4.5,4.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.2;transform:scale(5,5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(5.5,5.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(6,6);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(6.5,6.5);' /><use xlink:href='#gframe' class='use-gframe' style='opacity:0.1;transform:scale(7,7);' /></g><foreignObject font-size='140' width='1100' height='400'  fill='white' transform='translate(200 900)'><body xmlns='http://www.w3.org/1999/xhtml'><p style='color:#fff;font-family:Maison Neue;font-weight:bold; overflow:hidden; text-overflow: ellipsis; white-space: nowrap;width:1100px'>",
+            _name,
+            "</p></body></foreignObject><text transform='translate(900 1100)' fill='",
             textColor,
             "' xml:space='preserve' style='white-space: pre' font-family='Maison Neue' font-size='90' font-weight='bold' letter-spacing='0em'><tspan id = 'timeText' x='0' y='300'>",
             timestampToDate(_expiresAt),
