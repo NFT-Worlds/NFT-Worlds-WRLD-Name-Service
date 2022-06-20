@@ -5,7 +5,7 @@ import "./IWRLD_Name_Service_Resolver.sol";
 import "./IWRLD_Name_Service_Registry.sol";
 
 contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
-  IWRLD_Name_Service_Registry nameServiceRegistry;
+  IWRLD_Name_Service_Registry immutable nameServiceRegistry;
 
   mapping(uint256 => mapping(string => StringRecord)) private wrldNameStringRecords;
   mapping(uint256 => string[]) private wrldNameStringRecordsList;
