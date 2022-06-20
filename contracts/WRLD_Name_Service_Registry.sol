@@ -353,19 +353,20 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
   function _afterTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity) internal override {
     for (uint256 i = 0; i < quantity; i++) {
-      WRLDName storage wrldName = wrldNames[startTokenId + i];
+      uint256 tokenId = startTokenId + i;
+      WRLDName storage wrldName = wrldNames[tokenId];
 
       wrldName.controller = to;
 
       resolver.setAddressRecord(wrldName.name, "evm_default", to, 3600);
       emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
 
-      super._afterTokenTransfers(from, to, startTokenId, quantity);
-
       if (hasBridge()) {
-        bridge.transfer(from, to, startTokenId, quantity);
+        bridge.transfer(from, to, tokenId, wrldName.name);
       }
     }
+
+    super._afterTokenTransfers(from, to, startTokenId, quantity);
   }
 
   /***********

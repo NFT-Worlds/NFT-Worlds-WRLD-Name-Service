@@ -11,6 +11,7 @@ describe('World Name Service Contract', () => {
   let resolverContract;
   let wrldContract;
   let wnsPassesContract;
+  let mockBridgeContract;
 
   beforeEach(async () => {
     [ owner, ...otherAddresses ] = await ethers.getSigners();
@@ -20,15 +21,18 @@ describe('World Name Service Contract', () => {
     const WRLDNameServiceResolverFactory = await ethers.getContractFactory('WRLD_NameService_Resolver_V1');
     const WRLDTokenFactory = await ethers.getContractFactory('WRLD_Token_Ethereum');
     const WNSPassesFactory = await ethers.getContractFactory('WNS_Passes');
+    const MockBridgeFactory = await ethers.getContractFactory('Mock_Bridge');
 
     wrldContract = await WRLDTokenFactory.deploy();
     wnsPassesContract = await WNSPassesFactory.deploy();
     registryContract = await WRLDNameServiceRegistryFactory.deploy();
     registrarContract = await WRLDNameServiceRegistrarFactory.deploy(registryContract.address, wrldContract.address, wnsPassesContract.address);
     resolverContract = await WRLDNameServiceResolverFactory.deploy(registryContract.address);
+    mockBridgeContract = await MockBridgeFactory.deploy();
 
     await registryContract.setResolverContract(resolverContract.address);
     await registryContract.setApprovedRegistrar(registrarContract.address, true);
+    await registryContract.setBridgeContract(mockBridgeContract.address);
     await wnsPassesContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', registrarContract.address);
   });
 
@@ -251,6 +255,17 @@ describe('World Name Service Contract', () => {
       await expect(registryContract.connect(otherAddress).setStringRecord('arkdev', 'test1', 'new', 'A', 3600)).to.be.reverted;
       await expect(registryContract.connect(otherAddress).setUintRecord('arkdev', 'test2', 4567, 3600)).to.be.reverted;
       await expect(registryContract.connect(otherAddress).setIntRecord('arkdev', 'test3', -4567, 3600)).to.be.reverted;
+    });
+
+    it('Migrates name using bridge', async () => {
+      const registerer = otherAddresses[0];
+
+      await registrarContract.enableRegistration();
+
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
+      await registryContract.connect(registerer).migrate('arkdev', 0);
     });
   });
 
