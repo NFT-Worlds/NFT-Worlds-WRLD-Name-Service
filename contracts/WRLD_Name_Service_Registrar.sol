@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./INFTW_Whitelist.sol";
+import "./IWNS_Passes.sol";
 import "./IWRLD_Name_Service_Registry.sol";
 import "./StringUtils.sol";
 
@@ -17,7 +17,7 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
    * */
 
   IERC20 immutable wrld;
-  INFTW_Whitelist immutable whitelist;
+  IWNS_Passes immutable whitelist;
   IWRLD_Name_Service_Registry immutable registry;
 
   uint256 private constant YEAR_SECONDS = 31536000;
@@ -32,7 +32,7 @@ contract WRLD_Name_Service_Registrar is Ownable, ReentrancyGuard {
   constructor(address _registry, address _wrld, address _whitelist) {
     registry = IWRLD_Name_Service_Registry(_registry);
     wrld = IERC20(_wrld);
-    whitelist = INFTW_Whitelist(_whitelist);
+    whitelist = IWNS_Passes(_whitelist);
   }
 
   /****************

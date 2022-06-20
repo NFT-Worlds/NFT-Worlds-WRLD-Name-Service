@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./INFTW_Whitelist.sol";
+import "./IWNS_Passes.sol";
 import "./INFTW_Escrow.sol";
 
 contract WNS_Pass_Claim is Ownable, ReentrancyGuard {
-  INFTW_Whitelist immutable whitelist;
+  IWNS_Passes immutable wnsPasses;
   INFTWEscrow immutable nftwEscrow;
   IERC721 immutable nftw;
   IERC721 immutable avatars;
@@ -23,8 +23,8 @@ contract WNS_Pass_Claim is Ownable, ReentrancyGuard {
 
   bool public secondClaimEnabled = false;
 
-  constructor(address _whitelist, address _nftw, address _nftwEscrow, address _avatars, address _grayboys) {
-    whitelist = INFTW_Whitelist(_whitelist);
+  constructor(address _wnsPasses, address _nftw, address _nftwEscrow, address _avatars, address _grayboys) {
+    wnsPasses = IWNS_Passes(_wnsPasses);
     nftw = IERC721(_nftw);
     nftwEscrow = INFTWEscrow(_nftwEscrow);
     avatars = IERC721(_avatars);
@@ -71,7 +71,7 @@ contract WNS_Pass_Claim is Ownable, ReentrancyGuard {
     }
 
     if (claimTotal > 0) {
-      whitelist.mintTypeToAddress(PREREGISTRATION_PASS_TYPE_ID, claimTotal, msg.sender);
+      wnsPasses.mintTypeToAddress(PREREGISTRATION_PASS_TYPE_ID, claimTotal, msg.sender);
     }
   }
 

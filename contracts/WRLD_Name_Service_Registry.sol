@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./ERC721AF/ERC721AF.sol";
-import "./INFTW_Whitelist.sol";
+import "./IWNS_Passes.sol";
 import "./IWRLD_Name_Service_Bridge.sol";
 import "./IWRLD_Name_Service_Metadata.sol";
 import "./IWRLD_Name_Service_Resolver.sol";

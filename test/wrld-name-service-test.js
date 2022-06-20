@@ -10,7 +10,7 @@ describe('World Name Service Contract', () => {
   let registrarContract;
   let resolverContract;
   let wrldContract;
-  let whitelistContract;
+  let wnsPassesContract;
 
   beforeEach(async () => {
     [ owner, ...otherAddresses ] = await ethers.getSigners();
@@ -19,17 +19,17 @@ describe('World Name Service Contract', () => {
     const WRLDNameServiceRegistrarFactory = await ethers.getContractFactory('WRLD_Name_Service_Registrar');
     const WRLDNameServiceResolverFactory = await ethers.getContractFactory('WRLD_NameService_Resolver_V1');
     const WRLDTokenFactory = await ethers.getContractFactory('WRLD_Token_Ethereum');
-    const WhitelistFactory = await ethers.getContractFactory('NFTW_Whitelist');
+    const WNSPassesFactory = await ethers.getContractFactory('WNS_Passes');
 
     wrldContract = await WRLDTokenFactory.deploy();
-    whitelistContract = await WhitelistFactory.deploy();
+    wnsPassesContract = await WNSPassesFactory.deploy();
     registryContract = await WRLDNameServiceRegistryFactory.deploy();
-    registrarContract = await WRLDNameServiceRegistrarFactory.deploy(registryContract.address, wrldContract.address, whitelistContract.address);
+    registrarContract = await WRLDNameServiceRegistrarFactory.deploy(registryContract.address, wrldContract.address, wnsPassesContract.address);
     resolverContract = await WRLDNameServiceResolverFactory.deploy(registryContract.address);
 
     await registryContract.setResolverContract(resolverContract.address);
     await registryContract.setApprovedRegistrar(registrarContract.address, true);
-    await whitelistContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', registrarContract.address);
+    await wnsPassesContract.grantRole('0x6a9720191e216fcceabcf977981e1960eca316ba25983a901c27600afc53f108', registrarContract.address);
   });
 
   describe('Deployment', () => {
@@ -61,7 +61,7 @@ describe('World Name Service Contract', () => {
     });
 
     it('Registers WRLD names for free using pass or as owner', async () => {
-      await whitelistContract.mint(2, 5);
+      await wnsPassesContract.mint(2, 5);
 
       // register as owner, allowing 2 char name
       await registrarContract.registerWithPass([ 'tv' ]);
@@ -70,7 +70,7 @@ describe('World Name Service Contract', () => {
       const registerer = otherAddresses[0];
       await expect(registrarContract.connect(registerer).registerWithPass([ 'eth1' ], [ 1 ])).to.be.reverted;
 
-      await whitelistContract.safeTransferFrom(owner.address, registerer.address, 2, 2, 0);
+      await wnsPassesContract.safeTransferFrom(owner.address, registerer.address, 2, 2, 0);
       await expect(registrarContract.connect(registerer).registerWithPass([ 't' ])).to.be.reverted; // should not allow 1 or 2 char
       await registrarContract.connect(registerer).registerWithPass([ 'eth1', 'testtt' ]);
     });

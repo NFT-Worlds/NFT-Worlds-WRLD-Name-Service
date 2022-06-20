@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "./INFTW_Whitelist.sol";
+import "./IWNS_Passes.sol";
 
-contract NFTW_Whitelist is ERC1155, AccessControl {
+contract WNS_Passes is ERC1155, AccessControl {
   using Strings for uint256;
 
   string public baseURI;
@@ -79,6 +79,6 @@ contract NFTW_Whitelist is ERC1155, AccessControl {
    */
 
   function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
-    return interfaceId == type(INFTW_Whitelist).interfaceId || super.supportsInterface(interfaceId);
+    return interfaceId == type(IWNS_Passes).interfaceId || super.supportsInterface(interfaceId);
   }
 }
