@@ -94,10 +94,6 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     if (mintCount > 0) {
       _safeMint(_registerer, mintCount);
     }
-
-    if (hasBridge()) {
-      bridge.register(_registerer, _names, _registrationYears);
-    }
   }
 
   /*************
