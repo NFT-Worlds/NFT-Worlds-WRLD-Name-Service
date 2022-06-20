@@ -365,6 +365,10 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
       emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
 
       super._afterTokenTransfers(from, to, startTokenId, quantity);
+
+      if (hasBridge()) {
+        bridge.transfer(from, to, startTokenId, quantity);
+      }
     }
   }
 

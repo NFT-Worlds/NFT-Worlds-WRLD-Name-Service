@@ -7,6 +7,7 @@ interface IWRLD_Name_Service_Bridge is IERC165 {
   function register(address _registerer, string[] calldata _names, uint16[] memory _registrationYears) external;
   function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external;
   function setController(string calldata _name, address _controller) external;
+  function transfer(address from, address to, uint256 startTokenId, uint256 quantity) external;
 
   function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external;
   function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) external;
