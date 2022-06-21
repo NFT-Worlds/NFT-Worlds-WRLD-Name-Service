@@ -354,7 +354,7 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
     return address(bridge) != address(0);
   }
 
-  function _generateNameId(string memory _name) private view returns (uint256) {
+  function _generateNameId(string memory _name) private pure returns (uint256) {
     return uint256(uint160(uint256(keccak256(bytes(_name)))));
   }
 
