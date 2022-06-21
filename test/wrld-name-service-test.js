@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
-const YEAR_SECONDS = 31536000;
+const YEAR_SECONDS = 31557600; // 365.25
 
 describe('World Name Service Contract', () => {
   let owner;
@@ -93,10 +93,10 @@ describe('World Name Service Contract', () => {
 
       for (let i = 0; i < names.length; i++) {
         const wrldName = await registryContract.getName(names[i]);
+        const nameTokenId = await registryContract.getNameTokenId(names[i]);
         expect(wrldName.name).to.equal(names[i].toLowerCase());
         expect(await registryContract.getNameExpiration(wrldName.name)).to.equal(wrldName.expiresAt);
-        expect(await registryContract.getTokenName(i + 1)).to.equal(wrldName.name);
-        expect(await registryContract.getNameTokenId(wrldName.name)).to.equal(i + 1);
+        expect(await registryContract.getTokenName(nameTokenId)).to.equal(wrldName.name);
       }
     });
 
@@ -145,6 +145,8 @@ describe('World Name Service Contract', () => {
       await expect(registrarContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
 
       expect(await registryContract.getNameTokenId('arkdev') * 1).to.equal(tokenId);
+
+      console.log(await registryContract.getName('arkdev'));
     });
 
     it('Registers WRLD name using emojis', async () => {
@@ -235,6 +237,7 @@ describe('World Name Service Contract', () => {
       const addressRecord = await registryContract.getNameAddressRecord('aRkdev', 'test');
       const defaultAddressRecord = await registryContract.getNameAddressRecord('arkdeV', 'evm_default');
       const addressRecords = await registryContract.getNameAddressRecordsList('arkdEv');
+
       expect(addressRecord.value).to.equal(otherAddress.address);
       expect(addressRecord.ttl).to.equal(3600);
       expect(defaultAddressRecord.value).to.equal(registerer.address);
@@ -375,7 +378,8 @@ describe('World Name Service Contract', () => {
       await mintWRLDToAddressAndAllow(registerer, 5000);
       await registrarContract.connect(registerer).register([ 'arkdev' ], [ 8 ]);
       await registryContract.setMetadataContract(metadata.address);
-      expect((await registryContract.tokenURI(1)).includes('base64')).to.equal(true);
+      const tokenId = await registryContract.getNameTokenId('arkDev');
+      expect((await registryContract.tokenURI(tokenId)).includes('base64')).to.equal(true);
     });
   });
 

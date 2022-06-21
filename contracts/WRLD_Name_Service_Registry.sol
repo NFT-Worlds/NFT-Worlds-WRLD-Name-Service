@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./ERC721AF/ERC721AF.sol";
 import "./IWNS_Passes.sol";
 import "./IWRLD_Name_Service_Bridge.sol";
 import "./IWRLD_Name_Service_Metadata.sol";
@@ -13,7 +13,7 @@ import "./IWRLD_Name_Service_Resolver.sol";
 import "./IWRLD_Name_Service_Registry.sol";
 import "./StringUtils.sol";
 
-contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IWRLD_Records, Ownable, ReentrancyGuard {
+contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRLD_Records, Ownable, ReentrancyGuard {
   using StringUtils for *;
 
   /**
@@ -25,10 +25,11 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
   IWRLD_Name_Service_Resolver resolver;
   IWRLD_Name_Service_Bridge bridge;
 
-  uint256 private constant YEAR_SECONDS = 31536000;
+  uint256 private constant YEAR_SECONDS = 31557600; // 365.25 days
 
   mapping(uint256 => WRLDName) public wrldNames;
   mapping(string => uint256) private nameTokenId;
+  mapping(string => uint256) private nameBurnNonce;
 
   address private approvedWithdrawer;
   mapping(address => bool) private approvedRegistrars;
@@ -39,7 +40,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     uint256 expiresAt;
   }
 
-  constructor() ERC721AF("WRLD Name Service", "WNS") {}
+  constructor() ERC721("WRLD Name Service", "WNS") {}
 
   /************
    * Metadata *
@@ -57,42 +58,25 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
   function register(address _registerer, string[] calldata _names, uint16[] memory _registrationYears) external override isApprovedRegistrar {
     require(_names.length == _registrationYears.length, "Arg size mismatched");
 
-    uint256 mintCount = 0;
-    uint256 tokenStartId = _currentIndex;
-
     for (uint256 i = 0; i < _names.length; i++) {
-      require(_registrationYears[i] > 0, "Years must be greater than 0");
+      require(_registrationYears[i] > 0 && _registrationYears[i] <= 100, "Years must be between 1 and 100");
 
       string memory name = _names[i].UTS46Normalize();
-      uint256 expiresAt = block.timestamp + YEAR_SECONDS * _registrationYears[i];
+      uint96 expiresAt = uint96(block.timestamp + YEAR_SECONDS * _registrationYears[i]); // SafeCast not neccessary for uint96
+      uint256 tokenId = _generateNameId(name);  // tokenId is normalized name hashed to an address
 
-      if (nameExists(name)) {
-        require(getNameExpiration(name) < block.timestamp, "Unavailable name");
-
-        uint256 existingTokenId = nameTokenId[name];
-
-        wrldNames[existingTokenId].expiresAt = expiresAt;
-
-        _safeTransferFromForced(getNameOwner(name), _registerer, existingTokenId, "");
-      } else {
-        uint256 newTokenId = tokenStartId + mintCount;
-
-        wrldNames[newTokenId] = WRLDName({
-          name: name,
-          controller: _registerer,
-          expiresAt: expiresAt
-        });
-
-        nameTokenId[name] = newTokenId;
-
-        mintCount++;
-
-        emit NameRegistered(name, name, _registrationYears[i]);
+      if (_exists(tokenId)) {
+        require(wrldNames[tokenId].expiresAt < block.timestamp, "Unavailable name");
+        _burn(tokenId);
+        nameBurnNonce[name]++;
       }
-    }
 
-    if (mintCount > 0) {
-      _safeMint(_registerer, mintCount);
+      wrldNames[tokenId] = WRLDName(name, address(0), expiresAt);
+      nameTokenId[name] = tokenId;
+
+      _safeMint(_registerer, tokenId);
+
+      emit NameRegistered(name, name, _registrationYears[i]);
     }
   }
 
@@ -114,7 +98,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
       emit NameRegistrationExtended(_names[i], _names[i], _additionalYears[i]);
     }
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.extendRegistration(_names, _additionalYears);
     }
   }
@@ -208,7 +192,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    ***********/
 
   function migrate(string memory _name, uint256 _networkFlags) external normalizeName(_name) isOwnerOrController(_name) {
-    require(hasBridge(), "Bridge not set");
+    require(_hasBridge(), "Bridge not set");
 
     bridge.migrate(_name, _networkFlags);
   }
@@ -220,7 +204,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit NameControllerUpdated(_name, _name, _controller);
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setController(_name, _controller);
     }
   }
@@ -230,7 +214,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverStringRecordUpdated(_name, _name, _record, _value, _typeOf, _ttl, address(resolver));
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setStringRecord(_name, _record, _value, _typeOf, _ttl);
     }
   }
@@ -240,7 +224,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverAddressRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setAddressRecord(_name, _record, _value, _ttl);
     }
   }
@@ -250,7 +234,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverUintRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setUintRecord(_name, _record, _value, _ttl);
     }
   }
@@ -260,7 +244,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverIntRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setIntRecord(_name, _record, _value, _ttl);
     }
   }
@@ -274,7 +258,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverStringEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setStringEntry(msg.sender, _name, _entry, _value);
     }
   }
@@ -284,7 +268,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverAddressEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setAddressEntry(msg.sender, _name, _entry, _value);
     }
   }
@@ -294,7 +278,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverUintEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setUintEntry(msg.sender, _name, _entry, _value);
     }
   }
@@ -304,7 +288,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
     emit ResolverIntEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
 
-    if (hasBridge()) {
+    if (_hasBridge()) {
       bridge.setIntEntry(msg.sender, _name, _entry, _value);
     }
   }
@@ -349,34 +333,31 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    * Overrides *
    *************/
 
-  function _startTokenId() internal pure override returns (uint256) {
-    return 1; // must start at 1, id 0 is used as non-existant check.
-  }
+  function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal override {
+    WRLDName storage wrldName = wrldNames[tokenId];
 
-  function _afterTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity) internal override {
-    for (uint256 i = 0; i < quantity; i++) {
-      uint256 tokenId = startTokenId + i;
-      WRLDName storage wrldName = wrldNames[tokenId];
+    wrldName.controller = to;
 
-      wrldName.controller = to;
+    resolver.setAddressRecord(wrldName.name, "evm_default", to, 3600);
+    //emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
 
-      resolver.setAddressRecord(wrldName.name, "evm_default", to, 3600);
-      emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
+    /*if (_hasBridge()) {
+      bridge.transfer(from, to, tokenId, wrldName.name);
+    }*/
 
-      if (hasBridge()) {
-        bridge.transfer(from, to, tokenId, wrldName.name);
-      }
-    }
-
-    super._afterTokenTransfers(from, to, startTokenId, quantity);
+    super._beforeTokenTransfer(from, to, tokenId);
   }
 
   /***********
    * Helpers *
    ***********/
 
-  function hasBridge() private view returns (bool) {
+  function _hasBridge() private view returns (bool) {
     return address(bridge) != address(0);
+  }
+
+  function _generateNameId(string memory _name) private pure returns (uint256) {
+    return uint256(uint160(uint256(keccak256(bytes(_name)))));
   }
 
   /*************
