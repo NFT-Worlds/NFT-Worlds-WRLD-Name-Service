@@ -29,7 +29,6 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
 
   mapping(uint256 => WRLDName) public wrldNames;
   mapping(string => uint256) private nameTokenId;
-  mapping(string => uint256) private nameExpiredNonce;
 
   address private approvedWithdrawer;
   mapping(address => bool) private approvedRegistrars;
@@ -68,7 +67,6 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
       if (_exists(tokenId)) {
         require(wrldNames[tokenId].expiresAt < block.timestamp, "Unavailable name");
         _burn(tokenId);
-        nameExpiredNonce[name]++;
       }
 
       wrldNames[tokenId] = WRLDName(name, address(0), expiresAt);
@@ -357,7 +355,7 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
   }
 
   function _generateNameId(string memory _name) private view returns (uint256) {
-    return uint256(uint160(uint256(keccak256(bytes(_name))))) + nameExpiredNonce[_name];
+    return uint256(uint160(uint256(keccak256(bytes(_name)))));
   }
 
   /*************

@@ -145,8 +145,6 @@ describe('World Name Service Contract', () => {
       await expect(registrarContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
 
       expect(await registryContract.getNameTokenId('arkdev') * 1).to.equal(tokenId);
-
-      console.log(await registryContract.getName('arkdev'));
     });
 
     it('Registers WRLD name using emojis', async () => {
