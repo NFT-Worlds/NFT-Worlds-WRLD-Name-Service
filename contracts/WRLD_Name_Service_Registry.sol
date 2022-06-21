@@ -100,11 +100,13 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    * Extension *
    *************/
 
-  function extendRegistration(string[] calldata _names, uint16[] calldata _additionalYears) external override isApprovedRegistrar {
+  function extendRegistration(string[] memory _names, uint16[] calldata _additionalYears) external override isApprovedRegistrar {
     require(_names.length == _additionalYears.length, "Arg size mismatched");
 
     for (uint256 i = 0; i < _names.length; i++) {
       require(_additionalYears[i] > 0, "Years must be greater than zero");
+
+      _names[i] = _names[i].UTS46Normalize();
 
       WRLDName storage wrldName = wrldNames[nameTokenId[_names[i]]];
       wrldName.expiresAt = wrldName.expiresAt + YEAR_SECONDS * _additionalYears[i];
@@ -121,15 +123,15 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    * Resolve *
    ***********/
 
-  function nameAvailable(string memory _name) external view returns (bool) {
+  function nameAvailable(string memory _name) external view normalizeName(_name) returns (bool) {
     return !nameExists(_name) || getNameExpiration(_name) < block.timestamp;
   }
 
-  function nameExists(string memory _name) public view returns (bool) {
+  function nameExists(string memory _name) public view normalizeName(_name) returns (bool) {
     return nameTokenId[_name] != 0;
   }
 
-  function getNameTokenId(string calldata _name) external view override returns (uint256) {
+  function getNameTokenId(string memory _name) external view override normalizeName(_name) returns (uint256) {
     return nameTokenId[_name];
   }
 
@@ -137,67 +139,67 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     return wrldNames[_tokenId].name;
   }
 
-  function getName(string calldata _name) external view returns (WRLDName memory) {
+  function getName(string memory _name) external view normalizeName(_name) returns (WRLDName memory) {
     return wrldNames[nameTokenId[_name]];
   }
 
-  function getNameOwner(string memory _name) public view returns (address) {
+  function getNameOwner(string memory _name) public view normalizeName(_name) returns (address) {
     return ownerOf(nameTokenId[_name]);
   }
 
-  function getNameController(string memory _name) public view returns (address) {
+  function getNameController(string memory _name) public view normalizeName(_name) returns (address) {
     return wrldNames[nameTokenId[_name]].controller;
   }
 
-  function getNameExpiration(string memory _name) public view returns (uint256) {
+  function getNameExpiration(string memory _name) public view normalizeName(_name) returns (uint256) {
     return wrldNames[nameTokenId[_name]].expiresAt;
   }
 
-  function getNameStringRecord(string calldata _name, string calldata _record) external view returns (StringRecord memory) {
+  function getNameStringRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (StringRecord memory) {
     return resolver.getNameStringRecord(_name, _record);
   }
 
-  function getNameStringRecordsList(string calldata _name) external view returns (string[] memory) {
+  function getNameStringRecordsList(string memory _name) external view normalizeName(_name) returns (string[] memory) {
     return resolver.getNameStringRecordsList(_name);
   }
 
-  function getNameAddressRecord(string calldata _name, string calldata _record) external view returns (AddressRecord memory) {
+  function getNameAddressRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (AddressRecord memory) {
     return resolver.getNameAddressRecord(_name, _record);
   }
 
-  function getNameAddressRecordsList(string calldata _name) external view returns (string[] memory) {
+  function getNameAddressRecordsList(string memory _name) external view normalizeName(_name) returns (string[] memory) {
     return resolver.getNameAddressRecordsList(_name);
   }
 
-  function getNameUintRecord(string calldata _name, string calldata _record) external view returns (UintRecord memory) {
+  function getNameUintRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (UintRecord memory) {
     return resolver.getNameUintRecord(_name, _record);
   }
 
-  function getNameUintRecordsList(string calldata _name) external view returns (string[] memory) {
+  function getNameUintRecordsList(string memory _name) external view normalizeName(_name) returns (string[] memory) {
     return resolver.getNameUintRecordsList(_name);
   }
 
-  function getNameIntRecord(string calldata _name, string calldata _record) external view returns (IntRecord memory) {
+  function getNameIntRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (IntRecord memory) {
     return resolver.getNameIntRecord(_name, _record);
   }
 
-  function getNameIntRecordsList(string calldata _name) external view returns (string[] memory) {
+  function getNameIntRecordsList(string memory _name) external view normalizeName(_name) returns (string[] memory) {
     return resolver.getNameIntRecordsList(_name);
   }
 
-  function getStringEntry(address _setter, string calldata _name, string calldata _entry) external view returns (string memory) {
+  function getStringEntry(address _setter, string memory _name, string calldata _entry) external view normalizeName(_name) returns (string memory) {
     return resolver.getStringEntry(_setter, _name, _entry);
   }
 
-  function getAddressEntry(address _setter, string calldata _name, string calldata _entry) external view returns (address) {
+  function getAddressEntry(address _setter, string memory _name, string calldata _entry) external view normalizeName(_name) returns (address) {
     return resolver.getAddressEntry(_setter, _name, _entry);
   }
 
-  function getUintEntry(address _setter, string calldata _name, string calldata _entry) external view returns (uint256) {
+  function getUintEntry(address _setter, string memory _name, string calldata _entry) external view normalizeName(_name) returns (uint256) {
     return resolver.getUintEntry(_setter, _name, _entry);
   }
 
-  function getIntEntry(address _setter, string calldata _name, string calldata _entry) external view returns (int256) {
+  function getIntEntry(address _setter, string memory _name, string calldata _entry) external view normalizeName(_name) returns (int256) {
     return resolver.getIntEntry(_setter, _name, _entry);
   }
 
@@ -205,13 +207,13 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    * Control *
    ***********/
 
-  function migrate(string calldata _name, uint256 _networkFlags) external isOwnerOrController(_name) {
+  function migrate(string memory _name, uint256 _networkFlags) external normalizeName(_name) isOwnerOrController(_name) {
     require(hasBridge(), "Bridge not set");
 
     bridge.migrate(_name, _networkFlags);
   }
 
-  function setController(string calldata _name, address _controller) external {
+  function setController(string memory _name, address _controller) external normalizeName(_name) {
     require(getNameOwner(_name) == msg.sender, "Sender is not owner");
 
     wrldNames[nameTokenId[_name]].controller = _controller;
@@ -223,7 +225,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setStringRecord(string calldata _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external isOwnerOrController(_name) {
+  function setStringRecord(string memory _name, string calldata _record, string calldata _value, string calldata _typeOf, uint256 _ttl) external normalizeName(_name) isOwnerOrController(_name) {
     resolver.setStringRecord(_name, _record, _value, _typeOf, _ttl);
 
     emit ResolverStringRecordUpdated(_name, _name, _record, _value, _typeOf, _ttl, address(resolver));
@@ -233,7 +235,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) external isOwnerOrController(_name) {
+  function setAddressRecord(string memory _name, string memory _record, address _value, uint256 _ttl) external normalizeName(_name) isOwnerOrController(_name) {
     resolver.setAddressRecord(_name, _record, _value, _ttl);
 
     emit ResolverAddressRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
@@ -243,7 +245,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setUintRecord(string calldata _name, string calldata _record, uint256 _value, uint256 _ttl) external isOwnerOrController(_name) {
+  function setUintRecord(string memory _name, string calldata _record, uint256 _value, uint256 _ttl) external normalizeName(_name) isOwnerOrController(_name) {
     resolver.setUintRecord(_name, _record, _value, _ttl);
 
     emit ResolverUintRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
@@ -253,7 +255,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setIntRecord(string calldata _name, string calldata _record, int256 _value, uint256 _ttl) external isOwnerOrController(_name) {
+  function setIntRecord(string memory _name, string calldata _record, int256 _value, uint256 _ttl) external normalizeName(_name) isOwnerOrController(_name) {
     resolver.setIntRecord(_name, _record, _value, _ttl);
 
     emit ResolverIntRecordUpdated(_name, _name, _record, _value, _ttl, address(resolver));
@@ -267,7 +269,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
    * Entries *
    ***********/
 
-  function setStringEntry(string calldata _name, string calldata _entry, string calldata _value) external {
+  function setStringEntry(string memory _name, string calldata _entry, string calldata _value) external normalizeName(_name) {
     resolver.setStringEntry(msg.sender, _name, _entry, _value);
 
     emit ResolverStringEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
@@ -277,7 +279,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setAddressEntry(string calldata _name, string calldata _entry, address _value) external {
+  function setAddressEntry(string memory _name, string calldata _entry, address _value) external normalizeName(_name) {
     resolver.setAddressEntry(msg.sender, _name, _entry, _value);
 
     emit ResolverAddressEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
@@ -287,7 +289,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setUintEntry(string calldata _name, string calldata _entry, uint256 _value) external {
+  function setUintEntry(string memory _name, string calldata _entry, uint256 _value) external normalizeName(_name) {
     resolver.setUintEntry(msg.sender, _name, _entry, _value);
 
     emit ResolverUintEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
@@ -297,7 +299,7 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
     }
   }
 
-  function setIntEntry(string calldata _name, string calldata _entry, int256 _value) external {
+  function setIntEntry(string memory _name, string calldata _entry, int256 _value) external normalizeName(_name) {
     resolver.setIntEntry(msg.sender, _name, _entry, _value);
 
     emit ResolverIntEntryUpdated(msg.sender, _name, _entry, _name, _entry, _value);
@@ -388,6 +390,11 @@ contract WRLD_Name_Service_Registry is ERC721AF, IWRLD_Name_Service_Registry, IW
 
   modifier isOwnerOrController(string memory _name) {
     require((getNameOwner(_name) == msg.sender || getNameController(_name) == msg.sender), "Sender is not owner or controller");
+    _;
+  }
+
+  modifier normalizeName(string memory _name) {
+    _name = _name.UTS46Normalize();
     _;
   }
 }

@@ -58,7 +58,7 @@ describe('World Name Service Contract', () => {
 
       await registrarContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
 
-      const name = await registryContract.getName('arkdev');
+      const name = await registryContract.getName('arKdev');
 
       expect(name.name).to.equal('arkdev');
       expect(name.controller).to.equal(registerer.address);
@@ -86,14 +86,14 @@ describe('World Name Service Contract', () => {
 
       await mintWRLDToAddressAndAllow(registerer, 500000);
 
-      const names = [ 'arktech', 'arktechs', 'wrldmind', 'devtest', 'yoloman' ];
+      const names = [ 'aRktech', 'arktechS', 'wrldMind', 'devtest', 'Yoloman' ];
       const years = [ 10, 10, 10, 15, 10 ];
 
       await registrarContract.connect(registerer).register(names, years);
 
       for (let i = 0; i < names.length; i++) {
         const wrldName = await registryContract.getName(names[i]);
-        expect(wrldName.name).to.equal(names[i]);
+        expect(wrldName.name).to.equal(names[i].toLowerCase());
         expect(await registryContract.getNameExpiration(wrldName.name)).to.equal(wrldName.expiresAt);
         expect(await registryContract.getTokenName(i + 1)).to.equal(wrldName.name);
         expect(await registryContract.getNameTokenId(wrldName.name)).to.equal(i + 1);
@@ -110,10 +110,19 @@ describe('World Name Service Contract', () => {
       await registrarContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
       const initialExpiration = await registryContract.getNameExpiration('arkdev');
       await registrarContract.connect(registerer).extendRegistration([ 'arkdev' ], [ 5 ]);
-      expect((await registryContract.getNameExpiration('arkdev') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
+      expect((await registryContract.getNameExpiration('arkdeV') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
+    });
 
-      // case insensitive test
+    it('Registers WRLD name and checks case sensitivities', async () => {
+      const registerer = otherAddresses[0];
+
+      await registrarContract.enableRegistration();
+
+      await mintWRLDToAddressAndAllow(registerer, 5000);
+
+      await registrarContract.connect(registerer).register([ 'arkdev' ], [ 1 ]);
       await expect(registrarContract.connect(registerer).register([ 'ArkDev' ], [ 1 ])).to.be.reverted;
+      await expect(registrarContract.connect(registerer).register([ 'arkDEV' ], [ 1 ])).to.be.reverted;
     });
 
     it('Registers WRLD name and allows a new registrant if expiration time has passed', async () => {
@@ -125,14 +134,14 @@ describe('World Name Service Contract', () => {
       await mintWRLDToAddressAndAllow(registererOne, 50000);
       await mintWRLDToAddressAndAllow(registererTwo, 50000);
 
-      await registrarContract.connect(registererOne).register([ 'arkdev' ], [ 2 ]);
-      await expect(registrarContract.connect(registererTwo).register([ 'arkdev' ], [ 3 ])).to.be.reverted;
+      await registrarContract.connect(registererOne).register([ 'Arkdev' ], [ 2 ]);
+      await expect(registrarContract.connect(registererTwo).register([ 'arKdev' ], [ 3 ])).to.be.reverted;
 
-      const tokenId = await registryContract.getNameTokenId('arkdev') * 1;
+      const tokenId = await registryContract.getNameTokenId('arkdEv') * 1;
 
       await ethers.provider.send('evm_mine', [ Date.now() / 1000 + (YEAR_SECONDS * 2) + 600 ]);
 
-      await registrarContract.connect(registererTwo).register([ 'arkdev', 'newark' ], [ 3, 1 ]);
+      await registrarContract.connect(registererTwo).register([ 'arkdeV', 'neWark' ], [ 3, 1 ]);
       await expect(registrarContract.connect(registererOne).register([ 'arkdev', 'testing' ], [ 3 ])).to.be.reverted;
 
       expect(await registryContract.getNameTokenId('arkdev') * 1).to.equal(tokenId);
@@ -222,42 +231,42 @@ describe('World Name Service Contract', () => {
       await registryContract.connect(registerer).setController('arkdev', controller.address);
       expect(await registryContract.getNameController('arkdev')).to.equal(controller.address);
 
-      await registryContract.connect(controller).setAddressRecord('arkdev', 'test', otherAddress.address, 3600);
-      const addressRecord = await registryContract.getNameAddressRecord('arkdev', 'test');
-      const defaultAddressRecord = await registryContract.getNameAddressRecord('arkdev', 'evm_default');
-      const addressRecords = await registryContract.getNameAddressRecordsList('arkdev');
+      await registryContract.connect(controller).setAddressRecord('arkDev', 'test', otherAddress.address, 3600);
+      const addressRecord = await registryContract.getNameAddressRecord('aRkdev', 'test');
+      const defaultAddressRecord = await registryContract.getNameAddressRecord('arkdeV', 'evm_default');
+      const addressRecords = await registryContract.getNameAddressRecordsList('arkdEv');
       expect(addressRecord.value).to.equal(otherAddress.address);
       expect(addressRecord.ttl).to.equal(3600);
       expect(defaultAddressRecord.value).to.equal(registerer.address);
       expect(addressRecords[0]).to.equal('evm_default');
       expect(addressRecords[1]).to.equal('test');
 
-      await registryContract.connect(registerer).setStringRecord('arkdev', 'test1', 'something', 'A', 3600);
-      const stringRecord = await registryContract.getNameStringRecord('arkdev', 'test1');
-      const stringRecords = await registryContract.getNameStringRecordsList('arkdev');
+      await registryContract.connect(registerer).setStringRecord('aRkdev', 'test1', 'something', 'A', 3600);
+      const stringRecord = await registryContract.getNameStringRecord('arkdeV', 'test1');
+      const stringRecords = await registryContract.getNameStringRecordsList('Arkdev');
       expect(stringRecord.value).to.equal('something');
       expect(stringRecord.typeOf).to.equal('A');
       expect(stringRecord.ttl).to.equal(3600);
       expect(stringRecords[0]).to.equal('test1');
 
-      await registryContract.connect(controller).setUintRecord('arkdev', 'test2', 1234, 3600);
-      const uintRecord = await registryContract.getNameUintRecord('arkdev', 'test2');
-      const uintRecords = await registryContract.getNameUintRecordsList('arkdev');
+      await registryContract.connect(controller).setUintRecord('arKdev', 'test2', 1234, 3600);
+      const uintRecord = await registryContract.getNameUintRecord('arkdEv', 'test2');
+      const uintRecords = await registryContract.getNameUintRecordsList('Arkdev');
       expect(uintRecord.value).to.equal(1234);
       expect(uintRecord.ttl).to.equal(3600);
       expect(uintRecords[0]).to.equal('test2');
 
-      await registryContract.connect(controller).setIntRecord('arkdev', 'test3', -1234, 3600);
-      const intRecord = await registryContract.getNameIntRecord('arkdev', 'test3');
-      const intRecords = await registryContract.getNameIntRecordsList('arkdev');
+      await registryContract.connect(controller).setIntRecord('arkdeV', 'test3', -1234, 3600);
+      const intRecord = await registryContract.getNameIntRecord('aRKdev', 'test3');
+      const intRecords = await registryContract.getNameIntRecordsList('ARkdev');
       expect(intRecord.value).to.equal(-1234);
       expect(intRecord.ttl).to.equal(3600);
       expect(intRecords[0]).to.equal('test3');
 
-      await expect(registryContract.connect(otherAddress).setAddressRecord('arkdev', 'test', otherAddress.address, 3600)).to.be.reverted;
-      await expect(registryContract.connect(otherAddress).setStringRecord('arkdev', 'test1', 'new', 'A', 3600)).to.be.reverted;
-      await expect(registryContract.connect(otherAddress).setUintRecord('arkdev', 'test2', 4567, 3600)).to.be.reverted;
-      await expect(registryContract.connect(otherAddress).setIntRecord('arkdev', 'test3', -4567, 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setAddressRecord('arkdEV', 'test', otherAddress.address, 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setStringRecord('arKDev', 'test1', 'new', 'A', 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setUintRecord('aRKdev', 'test2', 4567, 3600)).to.be.reverted;
+      await expect(registryContract.connect(otherAddress).setIntRecord('ARkdev', 'test3', -4567, 3600)).to.be.reverted;
     });
 
     it('Migrates name using bridge', async () => {
@@ -282,20 +291,20 @@ describe('World Name Service Contract', () => {
       await mintWRLDToAddressAndAllow(registerer, 5000);
       await registrarContract.connect(registerer).register([ 'arkdev' ], [ 10 ]);
 
-      await registryContract.connect(entrySetter).setStringEntry('arkdev', 'class', 'dwarf');
-      expect(await registryContract.getStringEntry(entrySetter.address, 'arkdev', 'class')).to.equal('dwarf');
+      await registryContract.connect(entrySetter).setStringEntry('arKDev', 'class', 'dwarf');
+      expect(await registryContract.getStringEntry(entrySetter.address, 'Arkdev', 'class')).to.equal('dwarf');
       expect(await registryContract.getStringEntry(entrySetter.address, 'random', 'class')).to.equal(''); // never set
 
-      await registryContract.connect(entrySetter).setAddressEntry('arkdev', 'manager', otherAddresses[3].address);
-      expect(await registryContract.getAddressEntry(entrySetter.address, 'arkdev', 'manager')).to.equal(otherAddresses[3].address);
+      await registryContract.connect(entrySetter).setAddressEntry('arkdeV', 'manager', otherAddresses[3].address);
+      expect(await registryContract.getAddressEntry(entrySetter.address, 'aRkdev', 'manager')).to.equal(otherAddresses[3].address);
       expect(await registryContract.getAddressEntry(entrySetter.address, 'random', 'manager')).to.equal('0x0000000000000000000000000000000000000000'); // never set
 
-      await registryContract.connect(entrySetter).setUintEntry('arkdev', 'level', 124);
-      expect(await registryContract.getUintEntry(entrySetter.address, 'arkdev', 'level')).to.equal(124);
+      await registryContract.connect(entrySetter).setUintEntry('arkdEV', 'level', 124);
+      expect(await registryContract.getUintEntry(entrySetter.address, 'ARkdev', 'level')).to.equal(124);
       expect(await registryContract.getUintEntry(entrySetter.address, 'random', 'level')).to.equal(0); // never set
 
       await registryContract.connect(entrySetter).setIntEntry('arkdev', 'damage', -100);
-      expect(await registryContract.getIntEntry(entrySetter.address, 'arkdev', 'damage')).to.equal(-100);
+      expect(await registryContract.getIntEntry(entrySetter.address, 'arKDev', 'damage')).to.equal(-100);
       expect(await registryContract.getIntEntry(entrySetter.address, 'random', 'damage')).to.equal(0); // never set
     });
   });
