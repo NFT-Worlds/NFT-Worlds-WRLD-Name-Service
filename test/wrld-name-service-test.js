@@ -111,6 +111,9 @@ describe('World Name Service Contract', () => {
       const initialExpiration = await registryContract.getNameExpiration('arkdev');
       await registrarContract.connect(registerer).extendRegistration([ 'arkdev' ], [ 5 ]);
       expect((await registryContract.getNameExpiration('arkdev') * 1)).to.equal((initialExpiration * 1) + (YEAR_SECONDS * 5));
+
+      // case insensitive test
+      await expect(registrarContract.connect(registerer).register([ 'ArkDev' ], [ 1 ])).to.be.reverted;
     });
 
     it('Registers WRLD name and allows a new registrant if expiration time has passed', async () => {
