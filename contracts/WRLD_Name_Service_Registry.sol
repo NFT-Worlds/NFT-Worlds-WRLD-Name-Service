@@ -145,12 +145,20 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
     return resolver.getNameStringRecordsList(_name);
   }
 
+  function getNameStringRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view returns (string[] memory) {
+    return resolver.getNameStringRecordsListPaginated(_name, _offset, _limit);
+  }
+
   function getNameAddressRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (AddressRecord memory) {
     return resolver.getNameAddressRecord(_name, _record);
   }
 
   function getNameAddressRecordsList(string memory _name) external view normalizeName(_name) returns (string[] memory) {
     return resolver.getNameAddressRecordsList(_name);
+  }
+
+  function getNameAddressRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view returns (string[] memory) {
+    return resolver.getNameAddressRecordsListPaginated(_name, _offset, _limit);
   }
 
   function getNameUintRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (UintRecord memory) {
@@ -161,12 +169,20 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
     return resolver.getNameUintRecordsList(_name);
   }
 
+  function getNameUintRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view returns (string[] memory) {
+    return resolver.getNameUintRecordsListPaginated(_name, _offset, _limit);
+  }
+
   function getNameIntRecord(string memory _name, string calldata _record) external view normalizeName(_name) returns (IntRecord memory) {
     return resolver.getNameIntRecord(_name, _record);
   }
 
   function getNameIntRecordsList(string memory _name) external view normalizeName(_name) returns (string[] memory) {
     return resolver.getNameIntRecordsList(_name);
+  }
+
+  function getNameIntRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view returns (string[] memory) {
+    return resolver.getNameIntRecordsListPaginated(_name, _offset, _limit);
   }
 
   function getStringEntry(address _setter, string memory _name, string calldata _entry) external view normalizeName(_name) returns (string memory) {
