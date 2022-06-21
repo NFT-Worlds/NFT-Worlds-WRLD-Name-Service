@@ -89,12 +89,34 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
     return wrldNameStringRecordsList[_getNameTokenId(_name)];
   }
 
+  function getNameStringRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view override returns (string[] memory) {
+    string[] storage allRecords = wrldNameStringRecordsList[_getNameTokenId(_name)];
+    string[] memory paginatedRecords = new string[](_limit);
+
+    for (uint256 i = 0; i < _limit; i++) {
+      paginatedRecords[i] = allRecords[_offset + i];
+    }
+
+    return paginatedRecords;
+  }
+
   function getNameAddressRecord(string calldata _name, string calldata _record) external view override returns (AddressRecord memory) {
     return wrldNameAddressRecords[_getNameTokenId(_name)][_record];
   }
 
   function getNameAddressRecordsList(string calldata _name) external view override returns (string[] memory) {
     return wrldNameAddressRecordsList[_getNameTokenId(_name)];
+  }
+
+  function getNameAddressRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view override returns (string[] memory) {
+    string[] storage allRecords = wrldNameAddressRecordsList[_getNameTokenId(_name)];
+    string[] memory paginatedRecords = new string[](_limit);
+
+    for (uint256 i = 0; i < _limit; i++) {
+      paginatedRecords[i] = allRecords[_offset + i];
+    }
+
+    return paginatedRecords;
   }
 
   function getNameUintRecord(string calldata _name, string calldata _record) external view override returns (UintRecord memory) {
@@ -105,12 +127,34 @@ contract WRLD_NameService_Resolver_V1 is IWRLD_Name_Service_Resolver {
     return wrldNameUintRecordsList[_getNameTokenId(_name)];
   }
 
+  function getNameUintRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view override returns (string[] memory) {
+    string[] storage allRecords = wrldNameUintRecordsList[_getNameTokenId(_name)];
+    string[] memory paginatedRecords = new string[](_limit);
+
+    for (uint256 i = 0; i < _limit; i++) {
+      paginatedRecords[i] = allRecords[_offset + i];
+    }
+
+    return paginatedRecords;
+  }
+
   function getNameIntRecord(string calldata _name, string calldata _record) external view override returns (IntRecord memory) {
     return wrldNameIntRecords[_getNameTokenId(_name)][_record];
   }
 
   function getNameIntRecordsList(string calldata _name) external view override returns (string[] memory) {
     return wrldNameIntRecordsList[_getNameTokenId(_name)];
+  }
+
+  function getNameIntRecordsListPaginated(string calldata _name, uint256 _offset, uint256 _limit) external view override returns (string[] memory) {
+    string[] storage allRecords = wrldNameIntRecordsList[_getNameTokenId(_name)];
+    string[] memory paginatedRecords = new string[](_limit);
+
+    for (uint256 i = 0; i < _limit; i++) {
+      paginatedRecords[i] = allRecords[_offset + i];
+    }
+
+    return paginatedRecords;
   }
 
   /*****************
