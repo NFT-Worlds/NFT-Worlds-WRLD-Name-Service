@@ -61,7 +61,7 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
       require(_registrationYears[i] > 0 && _registrationYears[i] <= 100, "Years must be between 1 and 100");
 
       string memory name = _names[i].UTS46Normalize();
-      uint96 expiresAt = uint96(block.timestamp + YEAR_SECONDS * _registrationYears[i]); // SafeCast not neccessary for uint96
+      uint256 expiresAt = block.timestamp + YEAR_SECONDS * _registrationYears[i];
       uint256 tokenId = _generateNameId(name);  // tokenId is normalized name hashed to an address
 
       if (_exists(tokenId)) {
