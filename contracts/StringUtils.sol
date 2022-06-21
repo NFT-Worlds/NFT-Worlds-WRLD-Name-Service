@@ -80,19 +80,19 @@ library StringUtils {
         uint bytelength = bytes(s).length;
         bytes1 b0 = bytes(s)[0];
 
-        if (b0==0x2d||b0==0x5f||b0==0x7e) {  // not allowed: - _ ~
+        if (b0==0x2d||b0==0x5f||b0==0x7e) {  // not allowed in first position: - _ ~
             revert("invalid charset");
         }
         for (len = 0; i < bytelength; len++) {
             bytes1 b = bytes(s)[i];
             if (b < 0x80) {
-                i += 1;
                 if (b<0x2d||b==0x2e||b==0x2f||(b>=0x3a&&b<=0x40)||b==0x5b||b==0x5c||b==0x5d||b==0x5e||b==0x60||b==0x7b||b==0x7c||b==0x7d||b==0x7f) {
                     revert("invalid charset");
                 }
                 if (b>=0x41&&b<=0x5a) {
                     bytes(s)[i] = bytes1(uint8(b) + 32);
                 }
+                i += 1;
             } else if (b < 0xE0) {
                 i += 2;
             } else if (b < 0xF0) {

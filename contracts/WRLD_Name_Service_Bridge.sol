@@ -26,9 +26,10 @@ contract WRLD_Name_Service_Bridge is Ownable, FxBaseChildTunnel, IWRLD_Name_Serv
   // Polygon fx bridge
 
   function _processMessageFromRoot(uint256 , address sender, bytes calldata data) internal override validateSender(sender) {
-    uint256 tokenId = uint256(bytes32(data[0:31]));
-    uint96 expiresAt = uint96(uint256(bytes32(data[32:43])));
-    address registerer = address(uint160(uint256(bytes32(data[44:63]))));
+    (uint256 tokenId, uint96 expiresAt, address registerer) = abi.decode(data, (uint256, uint96, address));
+    //uint256 tokenId = uint256(bytes32(data[0:31]));
+    //uint96 expiresAt = uint96(uint256(bytes32(data[32:43])));
+    //address registerer = address(uint160(uint256(bytes32(data[44:63]))));
 	  wrldNames[tokenId] = WRLDName(registerer, address(0), expiresAt, "");
     emit NameBridged(tokenId, registerer, expiresAt);
   }

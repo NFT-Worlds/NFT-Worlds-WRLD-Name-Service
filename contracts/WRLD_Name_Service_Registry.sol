@@ -144,6 +144,10 @@ contract WRLD_Name_Service_Registry is Ownable, ERC721, IWRLD_Name_Service_Regis
     return uint256(uint160(uint256(keccak256(bytes(name)))));
   }
 
+  // function nameStd(string memory name) public pure returns (string memory){
+  //   return name.UTS46Normalize();
+  // }
+
   /*************
    * Overrides *
    *************/
