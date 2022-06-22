@@ -353,11 +353,11 @@ contract WRLD_Name_Service_Registry is ERC721, IWRLD_Name_Service_Registry, IWRL
     wrldName.controller = to;
 
     resolver.setAddressRecord(wrldName.name, "evm_default", to, 3600);
-    //emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
+    emit ResolverAddressRecordUpdated(wrldName.name, wrldName.name, "evm_default", to, 3600, address(resolver));
 
-    /*if (_hasBridge()) {
+    if (_hasBridge()) {
       bridge.transfer(from, to, tokenId, wrldName.name);
-    }*/
+    }
 
     super._beforeTokenTransfer(from, to, tokenId);
   }
